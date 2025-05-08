@@ -82,5 +82,5 @@ df = pd.read_csv(csv_path, low_memory=False)
 
 df["temp_col"] = df["Assay Description"].apply(extract_terms)
 
-save_path = "/Users/victoriamedina/Thesis_Project/Thesis/CHEMBL_Feb_5copy.csv"
+save_path = "/Users/victoriamedina/Thesis_Project/Thesis/CHEMBL_Feb_5.csv"
 df.to_csv(save_path, index=False)
