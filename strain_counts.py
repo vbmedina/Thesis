@@ -7,15 +7,15 @@ csv_file_path = "/Users/victoriamedina/Thesis_Project/Thesis/CHEMBL_Feb_5_with_c
 data = pd.read_csv(csv_file_path)
 
 # Verify the column "stand_strain" exists
-if "stand_strain" in data.columns:
+if "Canon_strain" in data.columns:
     # Count occurrences of each item in the "stand_strain column
-    strain_counts = Counter(data["stand_strain"].dropna())
+    strain_counts = Counter(data["Canon_strain"].dropna())
     
     # Print the counts
     for strain, count in strain_counts.items():
         print(f"{strain}: {count}")
 else:
-    print("The column 'stand_strain' does not exist in the CSV file.")
+    print("The column 'Canon_strain' does not exist in the CSV file.")
     strain_counts = Counter()  # Initialize an empty Counter if the column doesn't exist
 
 # Create a DataFrame from the strain counts
