@@ -6,6 +6,8 @@ csv_file_path = "/Users/victoriamedina/Thesis_Project/Thesis/CHEMBL_Feb_5_with_c
 
 data = pd.read_csv(csv_file_path)
 
+print(data.columns)
+
 # Verify the column "stand_strain" exists
 if "Canon_strain" in data.columns:
     # Count occurrences of each item in the "stand_strain column
