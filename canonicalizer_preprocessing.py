@@ -2,69 +2,73 @@ import pandas as pd
 import numpy as np
 import re
 from difflib import SequenceMatcher
+import itertools
 
 counts = pd.read_csv("/Users/victoriamedina/Thesis_Project/Thesis/strain_counts_3.csv")     # Strain, Count
 chembl = pd.read_csv("/Users/victoriamedina/Thesis_Project/Thesis/CHEMBL_Feb_5_Canon.csv")        # your cleaned big file
 
-# ------------------------------------------------------------------
-# 2.  Canonicalise every strain name
-# ------------------------------------------------------------------
+# tell the script which column holds the raw strain label
+STRAIN_COL = "stand_strain"          # ← CHANGE HERE if your file differs
+
+if STRAIN_COL not in chembl.columns:
+    raise KeyError(
+        f"‘{STRAIN_COL}’ not found. Available columns:\n{chembl.columns.tolist()}"
+    )
+
+# keep naming tidy
+chembl = chembl.rename(columns={STRAIN_COL: "raw_strain"})
+
+# ───────────────────────────────────────────────────────────────
+# 2.  Canonicalise every label
+# ───────────────────────────────────────────────────────────────
 def canonical(name: str) -> str:
-    """
-    Upper-case, strip leading/trailing blanks, then
-    delete every character that is NOT A–Z or 0–9.
-    """
     name = name.strip().upper()
     return re.sub(r"[^A-Z0-9]", "", name)
 
-counts["canon"] = counts["Strain"].apply(canonical)
+counts["canon"]       = counts["Strain"].apply(canonical)
+chembl["canon_raw"]   = chembl["raw_strain"].apply(canonical)
 
-# ------------------------------------------------------------------
-# 3.  First-pass merge: exact canonical matches
-# ------------------------------------------------------------------
+# ───────────────────────────────────────────────────────────────
+# 3.  Exact-synonym merge (spelling / punctuation only)
+# ───────────────────────────────────────────────────────────────
 syn_groups = (
     counts.groupby("canon")["Strain"]
     .apply(list)
     .to_dict()
 )
+rep = {c: sorted(names, key=len)[0] for c, names in syn_groups.items()}
 
-# Keep a representative label for each group
-# (here: the shortest original spelling, or pick the most frequent one)
-rep = {
-    canon: sorted(names, key=len)[0]            # customise if you prefer
-    for canon, names in syn_groups.items()
-}
+# ───────────────────────────────────────────────────────────────
+# 4.  Flag “possible derivative” pairs (HB3-leuR1 vs HB3, etc.)
+#     – uses the rules table we discussed last time
+# ───────────────────────────────────────────────────────────────
+SIM_THRESHOLD = 0.95
+EXTRA_CHARS   = 2
+suspects = []
 
-# ------------------------------------------------------------------
-# 4.  Second-pass: look for *near* matches that differ by
-#     a couple of extra chars (“derivatives”) and let you decide.
-# ------------------------------------------------------------------
-SIM_THRESHOLD = 0.95          # SequenceMatcher ratio
-EXTRA_CHARS   = 2             # how many extra alphanumeric chars
-suspects = []                 # (parent, possible_derivative)
+for c1, c2 in itertools.combinations(rep.keys(), 2):
+    ratio  = SequenceMatcher(None, c1, c2).ratio()
+    ldiff  = abs(len(c1) - len(c2))
+    if ratio > SIM_THRESHOLD and ldiff <= EXTRA_CHARS:
+        suspects.append((rep[c1], rep[c2]))
 
-for canon1, canon2 in itertools.combinations(rep.keys(), 2):
-    s1, s2 = rep[canon1], rep[canon2]
-    ratio   = SequenceMatcher(None, canon1, canon2).ratio()
-    length_diff = abs(len(canon1) - len(canon2))
-    if ratio > SIM_THRESHOLD and length_diff <= EXTRA_CHARS:
-        # Same canonical root plus ≤2 new chars (e.g. HB3 vs HB3R1)
-        suspects.append((s1, s2))
+pd.DataFrame(suspects, columns=["parent", "possible_derivative"]) \
+  .to_csv("strain_derivative_review.csv", index=False)
 
-suspect_df = pd.DataFrame(suspects, columns=["parent", "possible_derivative"])
-suspect_df.to_csv("strain_derivative_review.csv", index=False)
-print("▶ Review", len(suspect_df), "questionable pairs in strain_derivative_review.csv")
+print("▶ Review", len(suspects), "questionable pairs in strain_derivative_review.csv")
 
-# ------------------------------------------------------------------
-# 5.  Build the final mapping dict
-#     (After manual review, extend/modify `rep` as you see fit)
-# ------------------------------------------------------------------
-mapping = {original: rep[canon] for canon, names in syn_groups.items() for original in names}
+# ───────────────────────────────────────────────────────────────
+# 5.  Build mapping  (edit `rep` after manual review if needed)
+# ───────────────────────────────────────────────────────────────
+mapping = {orig: rep[canon]
+           for canon, names in syn_groups.items()
+           for orig in names}
 
-# ------------------------------------------------------------------
-# 6.  Apply to the full ChEMBL dataset
-# ------------------------------------------------------------------
-chembl["strain_clean"] = chembl["stran_strain"].map(mapping).fillna(chembl["stran_strain"])
+# ───────────────────────────────────────────────────────────────
+# 6.  Apply mapping and save
+# ───────────────────────────────────────────────────────────────
+chembl["Canon_Strain"] = chembl["Standard_Strain"].map(mapping) \
+                                              .fillna(chembl["Before_Strain"])
 
-#                         ──────►  ready for model training
 chembl.to_csv("CHEMBL_Feb_5_with_clean_strains.csv", index=False)
+print("Cleaned file written: CHEMBL_Feb_5_with_clean_strains.csv")
