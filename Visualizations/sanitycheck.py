@@ -29,3 +29,35 @@ pIC50_scores = np.array(pIC50_scores)
 # print (f"pIC50 scores: {pIC50_scores}")
 # print(len(ic50_scores))
 # print(len(pIC50_scores))
+
+print("IC50 scores below 0: ", np.where(ic50_scores < 0)[0])
+print("pIC50 scores above 15: ", np.where(pIC50_scores > 15)[0])
+
+already_checked = []
+
+copy_counts = {}
+copy_rows = []
+
+for i, row in chembl.iterrows():
+    strain = row['Standardized_Strain']
+    chemical = row['Molecule_ChEMBL_ID']
+    ic50 = row['Standard_Value']
+    doc = row['Document ChEMBL ID']
+
+    key = strain + chemical + str(ic50) + doc
+    if key in already_checked:
+        print(f"Copy found in row {i}: {key}")
+        if key not in copy_counts:
+            copy_counts[key] = 1
+        copy_counts[key] += 1
+        copy_rows.append(row)
+
+    already_checked.append(key)
+
+# Save the duplicate rows to a new CSV file
+copy_df = pd.DataFrame(copy_rows)
+copy_df.to_csv("/Users/victoriamedina/Thesis_Project/Thesis/Visualizations/duplicates.csv", index=False)
+
+# Print summary of duplicates
+for key, count in copy_counts.items():
+    print(f"{key}: {count} copies")
