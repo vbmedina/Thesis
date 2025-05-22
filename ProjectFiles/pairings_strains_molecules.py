@@ -41,4 +41,4 @@ for key in ic50_dict:
     "pIC50 Scores": pic50_str
     }
 
-new_data.to_csv("/Users/victoriamedina/Thesis_Project/Thesis/Visualizations/IC50_freq_with_pIC50.csv", index=False)
+new_data.to_csv("/Users/victoriamedina/Thesis_Project/Thesis/Visualizations/IC50_freq_with_pIC50_yay.csv", index=False)

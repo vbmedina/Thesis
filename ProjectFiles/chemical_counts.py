@@ -2,7 +2,7 @@ import pandas as pd
 from collections import Counter
 
 # File path to the CSV
-csv_file_path = "/Users/victoriamedina/Thesis_Project/Visualizations/chembl.csv"
+csv_file_path = "/Users/victoriamedina/Thesis_Project/Thesis/Visualizations/chembl.csv"
 
 data = pd.read_csv(csv_file_path)
 
