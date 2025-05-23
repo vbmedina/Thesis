@@ -57,11 +57,11 @@ data_path = "/Users/victoriamedina/Thesis_Project/Thesis/Visualizations/pairings
 data = pd.read_csv(data_path)
 
 # Sort and filter the top 20 strains
-top_strains = data.nlargest(20, 'Unique_Strains_Tested_on')
+top_strains = data.nlargest(20, 'Unique_Strains_Tested_On')
 
 # Create the histogram
 plt.figure(figsize=(12, 8))
-sns.barplot(data=top_strains, x='Chemical_ID', y='Unique_Strains_Tested_on', palette='viridis')
+sns.barplot(data=top_strains, x='Chemical_ID', y='Unique_Strains_Tested_On', palette='viridis')
 
 # Customize the plot
 plt.xticks(rotation=45, ha='right', fontsize=10)
