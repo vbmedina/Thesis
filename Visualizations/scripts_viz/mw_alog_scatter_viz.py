@@ -14,6 +14,15 @@ data = pd.read_csv(data_path)
 molecule_counts = data["Molecule_ChEMBL_ID"].value_counts().rename("Number of Molecules")
 data = data.merge(molecule_counts, left_on="Molecule_ChEMBL_ID", right_index=True)
 
+#Count how many fall in drug-like zone
+druglike_mask = (data["Molecular Weight"] <= 500) & (data["AlogP"] >= 1) & (data["AlogP"] <= 4)
+num_in_zone = druglike_mask.sum()
+total = len(data)
+percent_in_zone = 100 * num_in_zone / total
+
+print(f"{num_in_zone:,} out of {total:,} molecules fall within the drug-like zone")
+print(f"That’s {percent_in_zone:.2f}% of the dataset")
+
 # Plot setup
 plt.figure(figsize=(12, 8))
 
