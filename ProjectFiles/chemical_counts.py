@@ -21,10 +21,10 @@ else:
     strain_counts = Counter()  # Initialize an empty Counter if the column doesn't exist
 
 # Create a DataFrame from the strain counts
-strain_counts_df = pd.DataFrame(strain_counts.items(), columns=["Strain", "Count"])
+strain_counts_df = pd.DataFrame(strain_counts.items(), columns=["Chemical", "Count"])
 
 # File path for the new CSV
-output_csv_path = "/Users/victoriamedina/Thesis_Project/Thesis/chemical_counts_final.csv"
+output_csv_path = "/Users/victoriamedina/Thesis_Project/Thesis/Visualizations/chem_counts_final.csv"
 
 # Save the DataFrame to a new CSV file
 strain_counts_df.to_csv(output_csv_path, index=False)
