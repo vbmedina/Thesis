@@ -1,24 +1,31 @@
+import re
+import pandas as pd
+import numpy as np
+import seaborn as sns
+import matplotlib.pyplot as plt
+from matplotlib.colors import TwoSlopeNorm
+
 # Scatterplot of Molecular Weight (MW) vs AlogP ---------------------------------
 # Load the data
 data_path = "/Users/victoriamedina/Thesis_Project/Thesis/Visualizations/chembl.csv"
 data = pd.read_csv(data_path)
 
 # Count number of assays per molecule
-assay_counts = data["Molecule_ChEMBL_ID"].value_counts().rename("Number of Assays")
-data = data.merge(assay_counts, left_on="Molecule_ChEMBL_ID", right_index=True)
+molecule_counts = data["Molecule_ChEMBL_ID"].value_counts().rename("Number of Molecules")
+data = data.merge(molecule_counts, left_on="Molecule_ChEMBL_ID", right_index=True)
 
 # Plot setup
 plt.figure(figsize=(12, 8))
 
-# Add shaded "drug-like" zone: AlogP –1 to 5, MW ≤ 500
-plt.axvspan(1, 4, ymin=0, ymax=500/1000, color='green', alpha=0.3, label="Drug-like zone")
+# Add shaded "drug-like" zone: AlogP 1 to 4, MW ≤ 500
+plt.axvspan(1, 4, ymin=0, ymax=400/1000, color='green', alpha=0.3, label="Drug-like zone")
 
 # Scatterplot
 sns.scatterplot(
     data=data,
     x="AlogP",
     y="Molecular Weight",
-    size="Number of Assays",
+    size="Number of Molecules",
     hue="pChEMBL Value",
     palette="viridis",
     sizes=(10, 300),
@@ -28,7 +35,7 @@ sns.scatterplot(
 # Customize
 plt.xlabel('AlogP (lipophilicity)', fontsize=12)
 plt.ylabel('Molecular Weight (Da)', fontsize=12)
-plt.title('MW vs AlogP, Colored by pIC50 and Sized by # Assays', fontsize=14)
+plt.title('MW vs AlogP, Colored by pIC50 and Sized by # of Molecules', fontsize=14)
 plt.legend(title='pIC50 and Assays', bbox_to_anchor=(1.05, 1), loc='upper left')
 plt.grid(True)
 plt.tight_layout()
