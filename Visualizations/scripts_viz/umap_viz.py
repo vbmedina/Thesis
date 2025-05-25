@@ -60,7 +60,7 @@ print("UMAP completed.")
 
 # 7. Plot the results
 plt.figure(figsize=(10, 6))
-colors = {"High": "green", "Moderate": "yellow", "Low": "red"}
+colors = {"High": "#FDE725FF", "Moderate": "#7AD151FF", "Low": "#22A884FF"}
 
 for category, color in colors.items():
     mask = df["Potency_Bucket"] == category
@@ -75,7 +75,7 @@ plt.grid(True)
 plt.tight_layout()
 
 # 8. Save and show
-output_path = Path("/Users/victoriamedina/Thesis_Project/Thesis/Visualizations/scripts_viz/umap_chemspace_plot.png")
+output_path = Path("/Users/victoriamedina/Thesis_Project/Thesis/Visualizations/umap_chemspace_viz.png")
 plt.savefig(output_path, dpi=300)
 print(f"Plot saved to {output_path}")
 plt.show()
