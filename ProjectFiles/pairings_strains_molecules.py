@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 
 # ---------- 1. Load & clean raw data ----------
-df = pd.read_csv("/Users/victoriamedina/Thesis_Project/Thesis/Visualizations/chembl.csv")
+df = pd.read_csv("/Users/victoriamedina/Thesis_Project/Thesis/Visualizations/chembl_scaf.csv")
 
 ic50_dict = {}
 pic50_dict = {}
@@ -41,4 +41,4 @@ for key in ic50_dict:
     "pIC50 Scores": pic50_str
     }
 
-new_data.to_csv("/Users/victoriamedina/Thesis_Project/Thesis/Visualizations/pairings_strains_IC50.csv", index=False)
+new_data.to_csv("/Users/victoriamedina/Thesis_Project/Thesis/Visualizations/pairings_strains_IC50_scaff.csv", index=False)

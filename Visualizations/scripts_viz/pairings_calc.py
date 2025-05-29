@@ -5,8 +5,8 @@ import pandas as pd
 from itertools import combinations
 
 # 1) File paths
-in_path  = "/Users/victoriamedina/Thesis_Project/Thesis/Visualizations/pairings_strains_IC50.csv"
-out_path = "/Users/victoriamedina/Thesis_Project/Thesis/Visualizations/pairings_strains_IC50_edits.csv"
+in_path  = "/Users/victoriamedina/Thesis_Project/Thesis/Visualizations/pairings_strains_IC50_scaff.csv"
+out_path = "/Users/victoriamedina/Thesis_Project/Thesis/Visualizations/pairings_strains_IC50_edits_edits.csv"
 
 # 2) Helpers
 def parse_scores(score_str):
