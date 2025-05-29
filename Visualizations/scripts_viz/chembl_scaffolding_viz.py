@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 # Load your CSV
-df = pd.read_csv("/Users/victoriamedina/Thesis_Project/Thesis/Visualizations/chembl.csv", low_memory=False)
+df = pd.read_csv("/Users/victoriamedina/Thesis_Project/Thesis/Visualizations/chembl_scaf.csv", low_memory=False)
 
 # Generate scaffold column if not present
 def smiles_to_scaffold(smiles):
@@ -23,16 +23,16 @@ counts = scaffold_counts.values
 
 sns.set_theme(style="whitegrid", palette="viridis")
 
-# Log-log histogram
+# Log-log histogram with inverted axes
 bins = np.logspace(np.log10(1), np.log10(counts.max()), num=50)
 plt.figure()
-plt.hist(counts, bins=bins)
-plt.xscale('log')
+plt.hist(counts, bins=bins, orientation='horizontal')  # Invert axes by setting orientation to horizontal
 plt.yscale('log')
-plt.xlabel('Molecules per scaffold (log scale)')
-plt.ylabel('Number of scaffolds (log scale)')
+plt.xscale('log')
+plt.ylabel('Molecules per scaffold (log scale)')
+plt.xlabel('Frequency of scaffolds (log scale)')
 plt.title('Distribution of Scaffold Frequency')
 plt.tight_layout()
 
 # Save the histogram
-plt.savefig("/Users/victoriamedina/Thesis_Project/Thesis/Visualizations/scaffold_frequency_histogram.png", dpi=300)
+plt.savefig("/Users/victoriamedina/Thesis_Project/Thesis/Visualizations/scaffold_freq_hist_scaff_play.png", dpi=300)

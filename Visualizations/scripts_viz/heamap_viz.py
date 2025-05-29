@@ -3,7 +3,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 
 # Load the newly uploaded file
-df_heatmap = pd.read_csv("/Users/victoriamedina/Thesis_Project/Thesis/Visualizations/pairings_strains_IC50_edits.csv")
+df_heatmap = pd.read_csv("/Users/victoriamedina/Thesis_Project/Thesis/Visualizations/pairings_strains_IC50_scaff.csv")
 
 # Drop rows with missing Representative_pIC50
 df_heatmap_clean = df_heatmap.dropna(subset=["Representative_pIC50"])
@@ -25,12 +25,12 @@ sns.heatmap(
     annot_kws={"size": 6}
 )
 
-plt.title("Top 100 Strain-Chemical Pairs by Representative pIC50")
+plt.title("Top 100 Strain-Molecule Pairs by Representative pIC50")
 plt.xlabel("Strain", labelpad=1)
-plt.ylabel("Chemical", labelpad=10)
+plt.ylabel("Molecule", labelpad=10)
 plt.xticks(rotation=45, ha='right')
 plt.yticks(rotation=0)
 plt.tight_layout()
 
 # Save the heatmap
-plt.savefig("/Users/victoriamedina/Thesis_Project/Thesis/Visualizations/top_100_strain_chemical_heatmap.png", dpi=300)
+plt.savefig("/Users/victoriamedina/Thesis_Project/Thesis/Visualizations/top_100_pairs_hm_scaff.png", dpi=300)

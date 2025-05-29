@@ -10,7 +10,7 @@ from sklearn.preprocessing import StandardScaler
 import umap
 
 # 1. Load dataset
-DATA_PATH = "/Users/victoriamedina/Thesis_Project/Thesis/Visualizations/chembl.csv"
+DATA_PATH = "/Users/victoriamedina/Thesis_Project/Thesis/Visualizations/chembl_scaf.csv"
 df = pd.read_csv(DATA_PATH)
 print(f"Loaded {len(df):,} rows from {DATA_PATH}")
 
@@ -19,7 +19,7 @@ df = df.dropna(subset=["Smiles", "pChEMBL Value"]).reset_index(drop=True)
 print(f"{len(df):,} rows with valid SMILES and pChEMBL")
 
 # 3. Sample a subset for visualization (adjust n if needed)
-df = df.sample(n=40324)
+df = df.sample(n=39907)
 
 # 4. Convert SMILES to Morgan fingerprints and extract scaffolds
 def smiles_to_fp(smiles, radius=2, n_bits=2048):
