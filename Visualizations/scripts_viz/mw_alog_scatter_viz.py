@@ -7,7 +7,7 @@ from matplotlib.colors import TwoSlopeNorm
 
 # Scatterplot of Molecular Weight (MW) vs AlogP ---------------------------------
 # Load the data
-data_path = "/Users/victoriamedina/Thesis_Project/Thesis/Visualizations/chembl.csv"
+data_path = "/Users/victoriamedina/Thesis_Project/Thesis/Visualizations/chembl_scaf.csv"
 data = pd.read_csv(data_path)
 
 # Count number of assays per molecule
@@ -50,5 +50,5 @@ plt.grid(True)
 plt.tight_layout()
 
 # Save + show
-plt.savefig("/Users/victoriamedina/Thesis_Project/Thesis/Visualizations/mw_vs_alogp_scatterplot.png", dpi=300)
+plt.savefig("/Users/victoriamedina/Thesis_Project/Thesis/Visualizations/mw_vs_alogp_scat_scaff.png", dpi=300)
 plt.show()
