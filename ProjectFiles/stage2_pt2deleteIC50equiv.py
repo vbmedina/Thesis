@@ -24,3 +24,5 @@ print(f"Remaining rows: {after:,}")
 #Print all unique values in the "Standard Relation" column
 unique_values = df["Standard Relation"].unique()
 print("Unique values in 'Standard Relation':", unique_values)
+
+#remove ~, remove >, remove >=, remove ≈, remove NA, remove 0
