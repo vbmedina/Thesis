@@ -89,3 +89,6 @@ if unknown_units:
     for u, c in sorted(unknown_units.items(), key=lambda x: (-x[1], x[0])):
         print(f"  • {u:<12}  {c:>6} rows")
 print()
+
+#needs to try to salvage units that have ug/mL, 10^15 g/L, 10^-4 g?l, 10^-3 g/L should check if thse are all the units (Standard Units) that are used using Standard_Value and Molecular Weight column
+#can delete ug/well, and nM/g, and uMxhr

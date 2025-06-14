@@ -52,3 +52,5 @@ df_asec.to_csv(OUT_FILE, index=False)
 
 print(f"Saved strictly-asexual dataset: {OUT_FILE} "
       f"({n_asec:,} rows)")
+
+#CHANGES: add column to define sexual type. split into two files, one for sexual and one for asexual.

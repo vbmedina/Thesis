@@ -42,3 +42,7 @@ df.to_csv(OUT_CSV, index=False)
 print(f"✅  Wrote file with standardized strains → {OUT_CSV}")
 print("    Rows:", len(df), "| unique strains:",
       df['Standardized Strain'].nunique())
+
+
+
+# In every stage of the pipeline, we should keep track of the number of deleted rows

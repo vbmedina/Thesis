@@ -65,3 +65,6 @@ copy_df.to_csv("/Users/victoriamedina/Thesis_Project/Thesis/Visualizations/dupli
 # # Print summary of duplicates
 # for key, count in copy_counts.items():
 #     print(f"{key}: {count} copies")
+
+
+#CHANGES: the entire row should match for duplicates
