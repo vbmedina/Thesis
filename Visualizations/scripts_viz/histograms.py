@@ -67,7 +67,7 @@ sns.barplot(data=top_strains, x='mol_id', y='uniq_str', palette='coolwarm')
 plt.xticks(rotation=45, ha='right', fontsize=10)
 plt.xlabel('Molecule ID', fontsize=12)
 plt.ylabel('Number of Unique Strains Tested On', fontsize=12)
-plt.title('Molecules and Unique Chemicals Tested', fontsize=14)
+plt.title('Top 20 Molecules Tested on Unique Strains', fontsize=14)
 plt.tight_layout()
 
 # Save and show the plot
