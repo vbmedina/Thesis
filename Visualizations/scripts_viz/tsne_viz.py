@@ -7,7 +7,7 @@ from sklearn.manifold import TSNE
 from pathlib import Path
 
 # 1. Load dataset
-DATA_PATH = "/Users/victoriamedina/Thesis_Project/Thesis/Visualizations/chembl.csv"
+DATA_PATH = "/Users/victoriamedina/Thesis_Project/Thesis/Visualizations/chembl_scaf.csv"
 df = pd.read_csv(DATA_PATH)
 print(f"Loaded {len(df):,} rows from {DATA_PATH}")
 
@@ -17,7 +17,7 @@ print(f"{len(df):,} rows with valid SMILES and pChEMBL")
 
 
 # # 3. Sample a subset for visualization (adjust n if needed)
-df = df.sample(n=40324)
+df = df.sample(n=39907)
 
 # # 4. Convert SMILES to Morgan fingerprints
 def smiles_to_fp(Smiles, radius=2, n_bits=2048):
@@ -58,7 +58,7 @@ print("t-SNE completed.")
 
 # 7. Plot the results
 plt.figure(figsize=(10, 6))
-colors = {"High": "#FDE725FF", "Moderate": "#7AD151FF", "Low": "#22A884FF"}
+colors = {"High": "#C43032", "Moderate": "#e8d5cb", "Low": "#455DCE"}
 
 for category, color in colors.items():
     mask = df["Potency_Bucket"] == category
@@ -73,6 +73,6 @@ plt.grid(True)
 plt.tight_layout()
 
 # 8. Save and show
-output_path = Path("/Users/victoriamedina/Thesis_Project/Thesis/Visualizations/scripts_viz/tsne_chemspace_viz.png")
+output_path = Path("/Users/victoriamedina/Thesis_Project/Thesis/Visualizations/scripts_viz/tsne_chemspace_viz2.png")
 plt.savefig(output_path, dpi=300)
 print(f"Plot saved to {output_path}")

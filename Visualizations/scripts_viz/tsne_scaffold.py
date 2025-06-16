@@ -71,7 +71,7 @@ print(embedding.shape)
 
 # 7. Plot the results
 plt.figure(figsize=(10, 6))
-colors = {"High": "#FDE725FF", "Moderate": "#7AD151FF", "Low": "#22A884FF"}
+colors = {"High": "#C43032", "Moderate": "#e8d5cb", "Low": "#455DCE"}
 
 for category, color in colors.items():
     mask = df["Potency_Bucket"] == category
