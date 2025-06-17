@@ -33,7 +33,6 @@ FACTOR = {
     "NM":        1,
     "NANOMOLAR": 1,
     "UM":        1_000,         # µM
-    "UMWELL1":   1_000,         # µM well-1
     "MM":        1_000_000,     # mM
     "PM":        0.001,         # pM  (rare)
 }
@@ -55,7 +54,8 @@ def convert_row(row):
     if cu in FACTOR:
         convertible += 1
         return row[val_col] * FACTOR[cu]
-
+    
+# Dropping this and need to make it ug/mL,10^-5, g/l, 10$^-4g/L and 10^-3g/L and make it usuable by multiplying by MW in csv
     # Case B – "10^-x µM"
     m = exp_pat.fullmatch(raw_unit.replace(" ", ""))
     if m:
@@ -68,6 +68,7 @@ def convert_row(row):
     unknown_units[raw_unit] = unknown_units.get(raw_unit, 0) + 1
     dropped += 1
     return None
+# None convertables are uM well^-1, ug/well, nM/g, uMxhr
 
 df[val_col] = df.apply(convert_row, axis=1)
 
