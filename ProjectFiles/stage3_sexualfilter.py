@@ -3,9 +3,9 @@ from pathlib import Path
 import pandas as pd
 
 # ── 1. FILE LOCATIONS ────────────────────────────────────────────
-IN_FILE  = Path("/Users/victoriamedina/Thesis_Project/Thesis/CHEMBL_Feb_5_Sexual_and_Asexual.csv")
-OUT_FILE = Path("/Users/victoriamedina/Thesis_Project/Thesis/"
-                "CHEMBL_Feb_5_Asexual_Only.csv")
+IN_FILE  = Path("./Do Not Touch/postphase2_deleteEquiv.csv")
+OUT_FILE_ASEC = Path("./Do Not Touch/postphase3_Asexual_Only.csv")
+OUT_FILE_SEC = Path("./Do Not Touch/postphase3_Sexual_Only.csv")
 
 # ── 2. LOAD DATA ────────────────────────────────────────────────
 df = pd.read_csv(IN_FILE)
@@ -19,38 +19,31 @@ STAGE_PAT = re.compile(r"""
 """, re.IGNORECASE | re.VERBOSE)
 
 # ── 4. COLUMNS THAT CONTAIN ASSAY TEXT ─────────────────────────
-ASSAY_COLS = [c for c in ["Assay Description",
-                          "Assay Name",
-                          "Description",
-                          "Assay_Title"]
-              if c in df.columns]
-
-if not ASSAY_COLS:
-    raise ValueError(
-        "No assay-description column found."
-        "Add its name to ASSAY_COLS before running."
-    )
+ASSAY_COLS = df.columns.values
 
 # ── 5. FLAG & REMOVE NON-ASEXUAL ROWS ───────────────────────────
-is_non_asec = df[ASSAY_COLS].fillna("").apply(
+is_sec = df[ASSAY_COLS].fillna("").apply(
     lambda row: any(STAGE_PAT.search(str(cell)) for cell in row), axis=1
 )
 
 n_total     = len(df)
-n_non_asec  = int(is_non_asec.sum())
-n_asec      = n_total - n_non_asec
+n_sec       = int(is_sec.sum())
+n_asec      = n_total - n_sec
 
 print(f"• Scanned {n_total:,} rows")
-print(f"• Removing {n_non_asec:,} non-asexual rows "
-      f"({n_non_asec/n_total:.2%})")
+print(f"• Removing {n_sec:,} non-asexual rows "
+      f"({n_sec/n_total:.2%})")
 
-df_asec = df[~is_non_asec].copy()
+df_asec = df[~is_sec].copy()
+df_sec = df[is_sec].copy()
 
 # ── 6. SAVE CLEAN DATA ─────────────────────────────────────────
-OUT_FILE.parent.mkdir(parents=True, exist_ok=True)
-df_asec.to_csv(OUT_FILE, index=False)
+df_sec.to_csv(OUT_FILE_SEC, index=False)
 
-print(f"Saved strictly-asexual dataset: {OUT_FILE} "
+print(f"Saved sexual dataset: {OUT_FILE_SEC} "
+      f"({n_sec:,} rows)")
+
+df_asec.to_csv(OUT_FILE_ASEC, index=False)
+
+print(f"Saved strictly-asexual dataset: {OUT_FILE_ASEC} "
       f"({n_asec:,} rows)")
-
-#CHANGES: add column to define sexual type. split into two files, one for sexual and one for asexual.
