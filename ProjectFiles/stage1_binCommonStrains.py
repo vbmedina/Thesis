@@ -44,7 +44,7 @@ for strain in df_mapping_strains["Strains"].str.strip():
 # Map "stand_strain" in df to "Strain" using the mapping
 df["stand_strain_bin"] = df["stand_strain"].str.strip().map(strain_map)
 
-print(df.loc[df["stand_strain_bin"].isna(), "stand_strain"].unique())
+# print(df.loc[df["stand_strain_bin"].isna(), "stand_strain"].unique())
 print(f"{df['stand_strain_bin'].isna().sum()} removed.")
 df = df[~df["stand_strain_bin"].isna()]
 

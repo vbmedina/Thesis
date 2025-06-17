@@ -3,13 +3,8 @@ import re, shutil, datetime as dt
 import pandas as pd
 
 # ── 1.  PATHS ───────────────────────────────────────────────────
-CSV = Path("/Users/victoriamedina/Thesis_Project/Thesis/"
-           "CHEMBL_Feb_5_Asexual_Only_copy.csv")
-
-# optional: backup copy
-backup = CSV.with_suffix(f".bak_{dt.datetime.now():%Y%m%d_%H%M%S}.csv")
-shutil.copy2(CSV, backup)
-print("🗄️   Backup written →", backup)
+CSV = Path("./Do Not Touch/postphase1_strainsMerged.csv")
+CSVOUT = Path("./Do Not Touch/postphase2_convertedUnits.csv")
 
 # ── 2.  LOAD ────────────────────────────────────────────────────
 df = pd.read_csv(CSV, low_memory=False)   # low_memory=False suppresses dtype warning
@@ -20,12 +15,12 @@ val_col  = "Standard_Value"
 # ── 3.  HELPER: canonicalise unit strings ───────────────────────
 def canon(u: str) -> str:
     """
-    Upper-case, replace Greek µ/μ with U, strip non-alphanumerics
-    e.g. "µM well-1" → "UMWELL1"
+    Upper-case, strip non-alphanumerics
+    e.g. "uM well-1" → "UMWELL1"
     """
     if pd.isna(u):
         return ""
-    u = u.upper().replace("Μ", "U").replace("μ".upper(), "U").replace("µ".upper(), "U")
+    u = u.upper()
     return re.sub(r"[^A-Z0-9]", "", u)
 
 # direct factors (canon_string → multiplier for value → nM)
@@ -40,6 +35,9 @@ FACTOR = {
 
 # regex for strings like "10^-2microM", "10^-5 uM"
 exp_pat = re.compile(r"10\^?-?(-?\d+)\s*(?:U|MICRO)?M", re.I)
+# regex for strings like "10'-5 g/L"
+exp_pat_concentration = re.compile(r"(?:10\^?'?-?(-?\d+)\s*)?(U?)(?:G)/(M?)L", re.I)
+print(exp_pat_concentration.fullmatch("10'-5g/L").group(1))  # e.g. −2
 
 # ── 4.  CONVERT row-by-row ──────────────────────────────────────
 unknown_units = {}     # unit_string → count
@@ -64,7 +62,18 @@ def convert_row(row):
         convertible += 1
         return row[val_col] * factor
 
-    # Case C – unknown / non-convertible
+    # Case C – "10^-x g/L"
+    m = exp_pat_concentration.fullmatch(raw_unit.replace(" ", ""))
+    if m:
+        exponent = int(m.group(1))                 # e.g. −2
+        is_ug = m.group(2).upper() == "U"          # e.g. "U" for µ
+        is_mL = m.group(3).upper() == "M"          # e.g. "M" for mL
+        factor = (10 ** exponent) * 1e9 * (0.000001 if is_ug else 1) * (1000 if is_mL else 1)      # ug/mL → g/L or g/L → g/L
+        divisor = row["Molecular Weight"]          # g/L → nM
+        convertible += 1
+        return row[val_col] * factor / (divisor if divisor else 1)  # avoid division by zero
+    
+    # Case D – unknown / non-convertible
     unknown_units[raw_unit] = unknown_units.get(raw_unit, 0) + 1
     dropped += 1
     return None
@@ -78,7 +87,7 @@ after = len(df)
 df[unit_col] = "nM"
 
 # ── 6.  SAVE (overwrite) ────────────────────────────────────────
-df.to_csv(CSV, index=False)
+df.to_csv(CSVOUT, index=False)
 print(f"\n  Over-wrote {CSV}")
 print(f"   Converted rows : {convertible:,}")
 print(f"   Dropped rows   : {dropped:,}  ({dropped/before:.2%})")
@@ -90,5 +99,5 @@ if unknown_units:
         print(f"  • {u:<12}  {c:>6} rows")
 print()
 
-#needs to try to salvage units that have ug/mL, 10^15 g/L, 10^-4 g?l, 10^-3 g/L should check if thse are all the units (Standard Units) that are used using Standard_Value and Molecular Weight column
+#needs to try to salvage units that have ug/mL, 10^15 g/L, 10^-4 g/l, 10^-3 g/L should check if thse are all the units (Standard Units) that are used using Standard_Value and Molecular Weight column
 #can delete ug/well, and nM/g, and uMxhr
