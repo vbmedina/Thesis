@@ -3,13 +3,13 @@ import pandas as pd
 import numpy as np
 
 # ---------- 1. Load & clean raw data ----------
-df = pd.read_csv("/Users/victoriamedina/Thesis_Project/Thesis/Visualizations/chembl_scaf.csv")
+df = pd.read_csv("./Do Not Touch/postphase5.csv")
 
 ic50_dict = {}
 pic50_dict = {}
 
 for i, row in df.iterrows():
-    strain = row['Standardized_Strain']
+    strain = row['stand_strain_bin']
     chemical = row['Molecule_ChEMBL_ID']
     ic50 = row['Standard_Value']
     pic50 = row['pChEMBL Value']
@@ -41,4 +41,4 @@ for key in ic50_dict:
     "pIC50 Scores": pic50_str
     }
 
-new_data.to_csv("/Users/victoriamedina/Thesis_Project/Thesis/Visualizations/pairings_strains_IC50_scaff.csv", index=False)
+new_data.to_csv("./Visualizations/pairings_strains_IC50_scaff.csv", index=False)

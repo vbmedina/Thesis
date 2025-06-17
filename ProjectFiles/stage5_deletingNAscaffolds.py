@@ -4,8 +4,8 @@ from rdkit import Chem
 from rdkit.Chem.Scaffolds import MurckoScaffold
 
 # ── CONFIGURE PATHS ────────────────────────────────────────────
-IN_CSV  = Path("/Users/victoriamedina/Thesis_Project/Thesis/Visualizations/chembl.csv")
-OUT_CSV = IN_CSV.with_name("chembl_with_scaffolds_only.csv")
+IN_CSV  = Path("./Do Not Touch/postphase4_validSmiles.csv")
+OUT_CSV = IN_CSV.with_name("postphase5.csv")
 
 # ── LOAD DATA ───────────────────────────────────────────────────
 df = pd.read_csv(IN_CSV, low_memory=False)
