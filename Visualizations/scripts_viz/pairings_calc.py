@@ -5,13 +5,13 @@ import pandas as pd
 from itertools import combinations
 
 # 1) File paths
-in_path  = "/Users/victoriamedina/Thesis_Project/Thesis/Visualizations/pairings_strains_IC50_scaff.csv"
-out_path = "/Users/victoriamedina/Thesis_Project/Thesis/Visualizations/pairings_strains_IC50_edits_edits.csv"
+in_path  = "./Visualizations/pairings_strains_IC50_scaff.csv"
+out_path = "./Visualizations/pairings_strains_IC50_edits_edits.csv"
 
 # 2) Helpers
 def parse_scores(score_str):
     """Convert a colon-separated pIC50 string into a list of floats."""
-    return [float(x) for x in score_str.split(':') if x.strip()]
+    return [float(x) for x in score_str.split(':') if x.strip()] if isinstance(score_str, str) else [score_str]
 
 def compute_rmse(scores):
     """Compute RMSE of all pairwise differences in a list of floats."""
