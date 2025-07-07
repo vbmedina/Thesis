@@ -14,6 +14,7 @@ val_col  = "Standard_Value"
 
 before = len(df)
 df = df.dropna(subset=[val_col])
+df = df[df[val_col] > 0] # drop rows with 0
 after = len(df)
 totalDropped = before - after
 # ── 2.1  DELETE NA ────────────────────────────────────────

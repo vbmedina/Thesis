@@ -3,7 +3,7 @@ from pathlib import Path
 import pandas as pd
 
 # ── 1. FILE LOCATIONS ────────────────────────────────────────────
-IN_FILE  = Path("./Do Not Touch/postphase2_deleteEquiv.csv")
+IN_FILE  = Path("./Do Not Touch/postphase2_CorrectpIC50.csv")
 OUT_FILE_ASEC = Path("./Do Not Touch/postphase3_Asexual_Only.csv")
 OUT_FILE_SEC = Path("./Do Not Touch/postphase3_Sexual_Only.csv")
 
