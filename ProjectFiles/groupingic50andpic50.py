@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 
 # ---------- 1. Load & clean raw data ----------
-df = pd.read_csv("./ppchembl.csv", low_memory=False)
+df = pd.read_csv("./pp.csv", low_memory=False)
 
 ic50_dict = {}
 pic50_dict = {}
