@@ -1,12 +1,10 @@
-#!/usr/bin/env python3
-
 import numpy as np
 import pandas as pd
 from itertools import combinations
 
 # 1) File paths
-in_path  = "./Visualizations/pairings_strains_IC50_scaff.csv"
-out_path = "./Visualizations/pairings_strains_IC50_edits_edits.csv"
+in_path  = "./pairing_IC50_pIC50.csv"
+out_path = "./pairings_center.csv"
 
 # 2) Helpers
 def parse_scores(score_str):
