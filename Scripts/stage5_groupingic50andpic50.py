@@ -9,7 +9,7 @@ ic50_dict = {}
 pic50_dict = {}
 
 for i, row in df.iterrows():
-    strain = row['stand_strain_bin']
+    strain = row['Strains']
     chemical = row['Molecule_ChEMBL_ID']
     ic50 = row['Standard_Value']
     pic50 = row['pIC50']
