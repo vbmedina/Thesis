@@ -3,7 +3,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 
 # Load the newly uploaded file
-df_heatmap = pd.read_csv("/Users/victoriamedina/Thesis_Project/Thesis/Visualizations/pairings_strains_IC50_scaff.csv")
+df_heatmap = pd.read_csv("./pairings_center.csv")
 
 # Drop rows with missing Representative_pIC50
 df_heatmap_clean = df_heatmap.dropna(subset=["Representative_pIC50"])
@@ -33,4 +33,4 @@ plt.yticks(rotation=0)
 plt.tight_layout()
 
 # Save the heatmap
-plt.savefig("/Users/victoriamedina/Thesis_Project/Thesis/Visualizations/top_100_pairs_hm_scaff.png", dpi=300)
+plt.savefig("./top_100_pIC_hm.png", dpi=300)
