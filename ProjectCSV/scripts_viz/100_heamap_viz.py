@@ -18,7 +18,7 @@ heatmap_data = top_100.pivot_table(index="Chemical", columns="Strain", values="R
 plt.figure(figsize=(11, 7))
 sns.heatmap(
     heatmap_data,
-    cmap="coolwarm",
+    cmap="Reds",
     annot=True,
     fmt=".2f",
     cbar_kws={'label': 'Representative pIC50'},
