@@ -6,20 +6,20 @@ from rdkit.Chem import AllChem
 from sklearn.manifold import TSNE
 from pathlib import Path
 
-# 1. Load dataset
-DATA_PATH = "/Users/victoriamedina/Thesis_Project/Thesis/Visualizations/chembl_scaf.csv"
+# Load data
+DATA_PATH = "./pp.csv"
 df = pd.read_csv(DATA_PATH)
 print(f"Loaded {len(df):,} rows from {DATA_PATH}")
 
-# 2. Filter to valid SMILES and pChEMBL values
+# Filter to valid SMILES and pChEMBL values
 df = df.dropna(subset=["Smiles", "pChEMBL Value"]).reset_index(drop=True)
 print(f"{len(df):,} rows with valid SMILES and pChEMBL")
 
 
-# # 3. Sample a subset for visualization (adjust n if needed)
+# Sample a subset for viz
 df = df.sample(n=39907)
 
-# # 4. Convert SMILES to Morgan fingerprints
+# Convert SMILES to Morgan fingerprints
 def smiles_to_fp(Smiles, radius=2, n_bits=2048):
     mol = Chem.MolFromSmiles(Smiles)
     if mol is None:
@@ -39,7 +39,7 @@ fps = np.array(fps)
 df = df.iloc[valid_indices].copy()
 print(f"Generated fingerprints for {len(df):,} molecules")
 
-# 5. Bucket pChEMBL into potency categories
+# Bucket pChEMBL into potency categories
 def bucket_pchembl(p):
     if p >= 8:
         return "High"
@@ -50,13 +50,13 @@ def bucket_pchembl(p):
 
 df["Potency_Bucket"] = df["pChEMBL Value"].apply(bucket_pchembl)
 
-# # 6. Run t-SNE
+# Run t-SNE
 print(" Running t-SNE...")
 tsne = TSNE(n_components=2, perplexity=30, n_iter=1000)
 embedding = tsne.fit_transform(fps)
 print("t-SNE completed.")
 
-# 7. Plot the results
+# Plot the results
 plt.figure(figsize=(10, 6))
 colors = {"High": "#C43032", "Moderate": "#e8d5cb", "Low": "#455DCE"}
 
@@ -65,6 +65,7 @@ for category, color in colors.items():
     plt.scatter(embedding[mask, 0], embedding[mask, 1],
                 c=color, label=category, alpha=0.6, s=10)
 
+# Add a legend and labels
 plt.title("t-SNE of Morgan Fingerprints Colored by Potency")
 plt.xlabel("t-SNE-1")
 plt.ylabel("t-SNE-2")
@@ -72,7 +73,7 @@ plt.legend(title="Potency")
 plt.grid(True)
 plt.tight_layout()
 
-# 8. Save and show
-output_path = Path("/Users/victoriamedina/Thesis_Project/Thesis/Visualizations/scripts_viz/tsne_chemspace_viz2.png")
+# Save and show
+output_path = Path("./tsne_chemspace_viz2.png")
 plt.savefig(output_path, dpi=300)
 print(f"Plot saved to {output_path}")

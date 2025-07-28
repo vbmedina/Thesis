@@ -9,25 +9,26 @@ from rdkit.Chem.Scaffolds import MurckoScaffold
 from sklearn.preprocessing import StandardScaler
 import umap
 
-# 1. Load dataset
-DATA_PATH = "/Users/victoriamedina/Thesis_Project/Thesis/Visualizations/chembl_scaf.csv"
-df = pd.read_csv(DATA_PATH)
-print(f"Loaded {len(df):,} rows from {DATA_PATH}")
+# Load data
+data = "./pp.csv"
+df = pd.read_csv(data)
+print(f"Loaded {len(df):,} rows from {data}")
 
-# 2. Filter to valid SMILES and pChEMBL values
+# Filter to valid SMILES and pChEMBL values
 df = df.dropna(subset=["Smiles", "pChEMBL Value"]).reset_index(drop=True)
 print(f"{len(df):,} rows with valid SMILES and pChEMBL")
 
-# 3. Sample a subset for visualization (adjust n if needed)
+# Sample a subset for viz
 df = df.sample(n=39907)
 
-# 4. Convert SMILES to Morgan fingerprints and extract scaffolds
+# Convert SMILES to Morgan fingerprints and extract scaffolds
 def smiles_to_fp(smiles, radius=2, n_bits=2048):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return None
     return AllChem.GetMorganFingerprintAsBitVect(mol, radius, nBits=n_bits)
 
+# Extract scaffold from SMILES
 def extract_scaffold(smiles):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
@@ -35,10 +36,12 @@ def extract_scaffold(smiles):
     scaffold = MurckoScaffold.GetScaffoldForMol(mol)
     return Chem.MolToSmiles(scaffold)
 
+# Generate fingerprints and scaffolds
 fps = []
 valid_indices = []
 scaffolds = []
 
+# Iterate over SMILES to generate fingerprints and scaffolds
 for i, smi in enumerate(df["Smiles"]):
     fp = smiles_to_fp(smi)
     scaffold = extract_scaffold(smi)
@@ -47,12 +50,13 @@ for i, smi in enumerate(df["Smiles"]):
         valid_indices.append(i)
         scaffolds.append(scaffold)
 
+# Convert to numpy array
 fps = np.array(fps)
 df = df.iloc[valid_indices].copy()
 df["Scaffold"] = scaffolds
 print(f"Generated fingerprints and scaffolds for {len(df):,} molecules")
 
-# 5. Bucket pChEMBL into potency categories
+# Bucket pChEMBL into potency categories
 def bucket_pchembl(p):
     if p >= 8:
         return "High"
@@ -63,7 +67,7 @@ def bucket_pchembl(p):
 
 df["Potency_Bucket"] = df["pChEMBL Value"].apply(bucket_pchembl)
 
-# 6. Run UMAP
+# Run UMAP
 print("Running UMAP...")
 scaled_fps = StandardScaler().fit_transform(fps)
 reducer = umap.UMAP()
@@ -71,7 +75,7 @@ embedding = reducer.fit_transform(scaled_fps)
 print("UMAP completed.")
 
 
-# 7. Plot the results
+# Plot
 plt.figure(figsize=(10, 6))
 colors = {"High": "#C43032", "Moderate": "#e8d5cb", "Low": "#455DCE"}
 
@@ -80,6 +84,7 @@ for category, color in colors.items():
     plt.scatter(embedding[mask, 0], embedding[mask, 1],
                 c=color, label=category, alpha=0.6, s=10)
 
+# Add a legend and labels
 plt.title("UMAP of Morgan Fingerprints Colored by Potency")
 plt.xlabel("UMAP-1")
 plt.ylabel("UMAP-2")
@@ -87,8 +92,8 @@ plt.legend(title="Potency")
 plt.grid(True)
 plt.tight_layout()
 
-# 8. Save and show
-output_path = Path("/Users/victoriamedina/Thesis_Project/Thesis/Visualizations/umap_chemspace_scaff_viz2.png")
+# Save
+output_path = Path("./umap_chemspace_scaff_viz2.png")
 plt.savefig(output_path, dpi=300)
 print(f"Plot saved to {output_path}")
 plt.show()

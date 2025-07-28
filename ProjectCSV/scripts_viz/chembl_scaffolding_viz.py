@@ -5,10 +5,10 @@ from rdkit.Chem.Scaffolds import MurckoScaffold
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-# Load your CSV
+# Load CSV
 df = pd.read_csv("/Users/victoriamedina/Thesis_Project/Thesis/Visualizations/chembl_scaf.csv", low_memory=False)
 
-# Generate scaffold column if not present
+# Generate scaffolds
 def smiles_to_scaffold(smiles):
     if not isinstance(smiles, str):
         return None
@@ -34,5 +34,4 @@ plt.xlabel('Frequency of scaffolds (log scale)')
 plt.title('Distribution of Scaffold Frequency')
 plt.tight_layout()
 
-# Save the histogram
-plt.savefig("/Users/victoriamedina/Thesis_Project/Thesis/Visualizations/scaffold_freq_hist_scaff_play.png", dpi=300)
+plt.savefig("./scaffold_freq_hist_scaff_play.png", dpi=300)
