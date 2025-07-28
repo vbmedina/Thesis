@@ -84,18 +84,18 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 
 # 1) Load & prep data
-data_path = "/Users/victoriamedina/Thesis_Project/Thesis/Visualizations/chembl_scaf.csv"
+data_path = "./pp.csv"
 data = pd.read_csv(data_path)
 molecule_counts = data["Molecule_ChEMBL_ID"]\
     .value_counts()\
     .rename("Number of Molecules")
 data = data.merge(molecule_counts, left_on="Molecule_ChEMBL_ID", right_index=True)
 
-# 2) Print how many fall in the old “drug-like” zone (if you still care)
+# Print how many fall in the FDA approved drug-like zone
 old_mask = (data["Molecular Weight"] <= 500) & (data["AlogP"].between(1, 4))
 print(f"{old_mask.sum():,} / {len(data):,} in FDA-Approved Drug-Like Zone")
 
-# 3) Plot the scatter
+# Plot the scatter
 plt.figure(figsize=(12, 8))
 ax = plt.gca()
 sns.scatterplot(
@@ -104,47 +104,47 @@ sns.scatterplot(
     y="Molecular Weight",
     size="Number of Molecules",
     hue="pChEMBL Value",
-    palette="Blues",
+    palette="Reds",
     sizes=(10, 300),
     alpha=0.7,
     ax=ax
 )
 
-# 4) Define your empirical antimalarial zone
+# Define your empirical antimalarial zone
 min_logp, max_logp = 2.0, 9.0
 min_mw,    max_mw    = 250.0, 530.0
 width  = max_logp - min_logp
 height = max_mw    - min_mw
 
-# 5) Add a Rectangle patch in data‐coords
+# Add a Rectangle patch in data‐coords
 antimalarial_rect = mpatches.Rectangle(
-    (min_logp, min_mw),   # bottom‐left corner
-    width,                # x‐width
-    height,               # y‐height
+    (min_logp, min_mw),   
+    width,               
+    height,               
     linewidth=0,
     facecolor='green',
     alpha=0.3
 )
 ax.add_patch(antimalarial_rect)
 
-# 6) Create a custom handle for the legend
+# Create a custom handle for the legend
 rect_handle = mpatches.Patch(facecolor='green', alpha=0.3,
                              label='FDA-Approved Drug-Like Zone')
 
-# 7) Reorder legend entries (put the patch last)
+# Reorder legend entries (put the patch last)
 handles, labels = ax.get_legend_handles_labels()
 
-# remove any existing entry for our label
+# Remove any existing entry for our label
 if 'FDA-Approved Drug-Like Zone' in labels:
     idx = labels.index('FDA-Approved Drug-Like Zone')
     handles.pop(idx)
     labels.pop(idx)
 
-# append at end
+# Append at end
 handles.append(rect_handle)
 labels.append('FDA-Approved Drug-Like Zone')
 
-# 8) Draw the legend with extra spacing so your big circles don’t overlap
+# Draw the legend with extra spacing
 ax.legend(
     handles=handles,
     labels=labels,
@@ -157,17 +157,17 @@ ax.legend(
     labelspacing=1.2
 )
 
-# 9) Final tweaks
+# Final tweaks
 ax.set_xlabel('AlogP (lipophilicity)', fontsize=12)
 ax.set_ylabel('Molecular Weight (Da)', fontsize=12)
 ax.set_title('MW vs AlogP, Colored by pIC50 and Sized by # of Molecules', fontsize=14)
 ax.grid(True)
 plt.tight_layout()
 
-# 10) Save as vector
+# Save
 plt.savefig(
-    "/Users/victoriamedina/Thesis_Project/Thesis/Visualizations/mw_vs_alogp_scat_scaff.svg",
-    format="svg",
+    "./mw_vs_alogp_scat_scaff.png",
+    format="png",
     bbox_inches="tight"
 )
 plt.show()

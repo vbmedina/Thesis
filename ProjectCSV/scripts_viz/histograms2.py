@@ -5,71 +5,86 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from matplotlib.colors import TwoSlopeNorm
 
-#Histogram of the top 20 strains ---------------------------------
-# Load the data
-data_path = "Thesis/Visualizations/after_scaff/str_counts_final_scaff.csv"
-data = pd.read_csv(data_path)
+# Top 50 Strains by Molecule Pairings (Non-Unique)
+# Load data
+strain_data = pd.read_csv("./final_strain_counts.csv")
 
-# Sort and filter the top 20 strains
-top_strains = data.nlargest(20, 'Count')
+# Sort top 50 strains
+top_strains = strain_data.nlargest(50, 'Count').sort_values(by='Count', ascending=False)
 
-# Create the histogram
-plt.figure(figsize=(12, 8))
-sns.barplot(data=top_strains, x='Strain', y='Count', palette='viridis')
+# Create color palette: Reds inverted
+strain_palette = sns.color_palette("Reds", n_colors=50)[::-1]
 
-# Customize the plot
-plt.xticks(rotation=45, ha='right', fontsize=10)
-plt.xlabel('Target Strain', fontsize=12)
-plt.ylabel('Number of Tested Molecules (Non-unique)', fontsize=12)
-plt.title('Top 20 Strains with the Highest Molecule Pairings', fontsize=14)
+# Make barplot
+plt.figure(figsize=(14, 8))
+sns.barplot(data=top_strains, x='Strain', y='Count', palette=strain_palette)
+
+# Customizations
+plt.xticks(rotation=45, ha='right', fontsize=9)
+plt.xlabel('Strain Identifier', fontsize=12)
+plt.ylabel('Number of Times Tested', fontsize=12)
+plt.title('Top 50 Most Frequently Tested Strains', fontsize=14)
 plt.tight_layout()
 
-# Save and show the plot
-plt.savefig("/Users/victoriamedina/Thesis_Project/Thesis/Visualizations/top_20_strains_histogram_scaff.png", dpi=300)
+# Save and display
+plt.savefig("./top_50_strains_hm.png", dpi=300)
 plt.show()
 
-# Histogram of the top 20 Molecules ---------------------------------
-# Load the data
-data_path = "/Users/victoriamedina/Thesis_Project/Thesis/Visualizations/after_scaff/mol_counts_final_scaff.csv"
-data = pd.read_csv(data_path)
 
-# Sort and filter the top 20 strains
-top_strains = data.nlargest(20, 'Count')
 
-# Create the histogram
-plt.figure(figsize=(12, 8))
-sns.barplot(data=top_strains, x='Chemical', y='Count', palette='viridis')
+# Top 50 Molecules by Strain Pairings (Non-Unique)
+# Load data
+molecule_data = pd.read_csv("./final_mol_counts.csv")
 
-# Customize the plot
-plt.xticks(rotation=45, ha='right', fontsize=10)
-plt.xlabel('Molecule ID', fontsize=12)
-plt.ylabel('Strains Tested on', fontsize=12)
-plt.title('Top 20 Molecules Tested on Non-Unique Strains', fontsize=14)
+# Sort top 50 molecules
+top_molecules = molecule_data.nlargest(50, 'Count').sort_values(by='Count', ascending=False)
+
+# Reversed red palette
+molecule_palette = sns.color_palette("Reds", n_colors=50)[::-1]
+
+# Generate molecule barplot
+plt.figure(figsize=(14, 8))
+sns.barplot(data=top_molecules, x='Chemical', y='Count', palette=molecule_palette)
+
+# Customizations
+plt.xticks(rotation=45, ha='right', fontsize=7)
+plt.xlabel('ChEMBL Molecule Identifier', fontsize=12)
+plt.ylabel('Number of Times Tested', fontsize=12)
+plt.title('Top 50 Most Frequently Tested Molecules', fontsize=14)
 plt.tight_layout()
 
-# Save and show the plot
-plt.savefig("/Users/victoriamedina/Thesis_Project/Thesis/Visualizations/top_20_mols_histogram.png", dpi=300)
+# Save and display
+plt.savefig("./top_50_molecules_hm.png", dpi=300)
 plt.show()
 
-# Histogram of the top 20  ---------------------------------# 
-# Load the data
-data_path = "/Users/victoriamedina/Thesis_Project/Thesis/Visualizations/pairings_strains_IC50_scaff.csv"
-data = pd.read_csv(data_path)
 
-# Sort and filter the top 20 strains
-top_strains = data.nlargest(20, 'uniq_str')
 
-# Create the histogram
-plt.figure(figsize=(12, 8))
-sns.barplot(data=top_strains, x='mol_id', y='uniq_str', palette='viridis')
+# Top 50 Molecules by Unique Strain Coverage
+# Load data
+pairings_data = pd.read_csv("./pairings_center.csv")
 
-# Customize the plot
-plt.xticks(rotation=45, ha='right', fontsize=10)
-plt.xlabel('Molecule ID', fontsize=12)
-plt.ylabel('Number of Unique Strains Tested On', fontsize=12)
-plt.title('Molecules and Unique Chemicals Tested', fontsize=14)
+# Calculate unique strains tested per molecule
+unique_strain_counts = (pairings_data.groupby('Chemical')['Strain'].nunique()
+    .nlargest(50)
+    .reset_index()
+    .sort_values(by='Strain', ascending=False))
+
+unique_strain_counts.columns = ['Chemical', 'UniqueStrains']
+
+# Color palette
+diversity_palette = sns.color_palette("Reds", n_colors=50)[::-1]
+
+# Generate barplot 
+plt.figure(figsize=(14, 8))
+sns.barplot(data=unique_strain_counts, x='Chemical', y='UniqueStrains', palette=diversity_palette)
+
+# Customizations
+plt.xticks(rotation=45, ha='right', fontsize=7)
+plt.xlabel('ChEMBL Molecule Identifier', fontsize=12)
+plt.ylabel('Number of Unique Strains Tested', fontsize=12)
+plt.title('Top 50 Molecules by Unique Strain Coverage', fontsize=14)
 plt.tight_layout()
 
-# Save and show the plot
-plt.savefig("/Users/victoriamedina/Thesis_Project/Thesis/Visualizations/molecules_unique_strains_histogra_scaff.png", dpi=300)
+# Save and display
+plt.savefig("./molecules_unique_strain_coverage.png", dpi=300)
 plt.show()

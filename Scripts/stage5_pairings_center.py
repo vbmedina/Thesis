@@ -2,11 +2,11 @@
 # import pandas as pd
 # from itertools import combinations
 
-# # 1) File paths
+# # File paths
 # in_path  = "./pairing_IC50_pIC50.csv"
 # out_path = "./pairings_center.csv"
 
-# # 2) Helpers
+# # Helpers
 # def parse_scores(score_str):
 #     """Convert a colon-separated pIC50 string into a list of floats."""
 #     return [float(x) for x in score_str.split(':') if x.strip()] if isinstance(score_str, str) else [score_str]
@@ -26,10 +26,10 @@
 #     a = float(np.mean(scores)) if is_reliable else float(np.median(scores))
 #     return np.round(a, 6) 
 
-# # 3) Load the data
+# # Load the data
 # df = pd.read_csv(in_path)
 
-# # 4) Compute new columns
+# # Compute new columns
 # rmse_vals        = []
 # reliable_flags   = []
 # representatives  = []

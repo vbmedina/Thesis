@@ -2,7 +2,7 @@ import pandas as pd
 from collections import Counter
 
 # File path to the CSV
-csv_file_path = "/Users/victoriamedina/Thesis_Project/Thesis/Visualizations/chembl_scaf.csv"
+csv_file_path = "./pp.csv"
 
 data = pd.read_csv(csv_file_path)
 
@@ -24,7 +24,7 @@ else:
 molecule_counts_df = pd.DataFrame(molecule_counts.items(), columns=["Chemical", "Count"])
 
 # File path for the new CSV
-output_csv_path = "/Users/victoriamedina/Thesis_Project/Thesis/Visualizations/chem_counts_final_scaff.csv"
+output_csv_path = "./chem_counts_final_scaff.csv"
 
 # Save the DataFrame to a new CSV file
 molecule_counts_df.to_csv(output_csv_path, index=False)
