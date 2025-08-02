@@ -4,9 +4,9 @@ from rdkit import Chem
 from rdkit.Chem import SaltRemover
 from pathlib import Path
 
-in_csv = Path("./Do Not Touch/postphase3_Asexual_Only.csv")
-out_fir = Path("./Do Not Touch/postphase4_validSmiles.csv")
-out_inv = Path("./Do Not Touch/postphase4_invalidSmiles.csv")
+in_csv = Path("./do_not_touch/postphase3_Asexual_Only.csv")
+out_fir = Path("./do_not_touch/postphase4_validSmiles.csv")
+out_inv = Path("./do_not_touch/postphase4_invalidSmiles.csv")
 
 df = pd.read_csv(in_csv)
 before_removal = len(df)

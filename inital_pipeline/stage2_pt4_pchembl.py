@@ -2,8 +2,8 @@ import pandas as pd
 import numpy as np
 
 #Path
-IN_CSV = "./Do Not Touch/postphase2_deleteEquiv.csv"
-OUT_CSV = "./Do Not Touch/postphase2_CorrectpIC50.csv"
+IN_CSV = "./do_not_touch/postphase2_deleteEquiv.csv"
+OUT_CSV = "./do_not_touch/postphase2_CorrectpIC50.csv"
 
 # Load the data
 df = pd.read_csv(IN_CSV)

@@ -2,8 +2,8 @@ from pathlib import Path
 import pandas as pd
 
 # Paths
-csv_in = Path("./Do Not Touch/postphase2_deleteDuplicates.csv")
-csv_out = Path("./Do Not Touch/postphase2_deleteEquiv.csv")
+csv_in = Path("./do_not_touch/postphase2_deleteDuplicates.csv")
+csv_out = Path("./do_not_touch/postphase2_deleteEquiv.csv")
 
 # Load DF
 df = pd.read_csv(csv_in)
@@ -17,6 +17,8 @@ df = df[~df["Standard Relation"].str.contains("≈", na=False)]
 df = df[~df["Standard Relation"].str.contains("NA", na=False)]
 df = df[~df["Standard Relation"].str.contains("0", na=False)]
 after = len(df)
+
+print(df["Standard Relation"].unique())
 
 # Save CSV 
 df.to_csv(csv_out, index=False)

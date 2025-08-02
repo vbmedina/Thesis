@@ -3,9 +3,9 @@ from pathlib import Path
 import pandas as pd
 
 # File Paths
-csv_in  = Path("./Do Not Touch/postphase2_CorrectpIC50.csv")
-out_fir = Path("./Do Not Touch/postphase3_Asexual_Only.csv")
-out_sec = Path("./Do Not Touch/postphase3_Sexual_Only.csv")
+csv_in  = Path("./do_not_touch/postphase2_cleaned.csv")
+out_fir = Path("./do_not_touch/postphase3_Asexual_Only.csv")
+out_sec = Path("./do_not_touch/postphase3_Sexual_Only.csv")
 
 # ── 2. LOAD DATA ────────────────────────────────────────────────
 df = pd.read_csv(csv_in)
