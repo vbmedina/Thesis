@@ -1,3 +1,6 @@
+# Run first then comment out the code below
+# ------------------------------------------------------------------------------------------
+
 # import numpy as np
 # import pandas as pd
 # from itertools import combinations
@@ -43,18 +46,18 @@
 #     reliable_flags.append(is_rel)
 #     representatives.append(choose_representative_pic50(scores, is_rel))
 
-# # 5) Assign back into the DataFrame as floats
+# # Assign back into the DataFrame as floats
 # df['delta_pIC50_RMSE']      = pd.Series(rmse_vals)
 # df['Reliable_pIC50']        = pd.Series(reliable_flags)
 # df['Representative_pIC50']  = pd.Series(representatives)
 
 
-# # 6) Save to a new CSV
+# # Save to a new CSV
 # df.to_csv(out_path, index=False)
 # print(f"Written processed CSV to: {out_path}")
 
 # ------------------------------------------------------------------------------------------
-#adding pIC50 to pp csv
+# Adding run second and comment top out... this is to add pIC50 to pp csv
 
 import pandas as pd
 

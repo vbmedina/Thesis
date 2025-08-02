@@ -2,12 +2,12 @@ import pandas as pd
 import numpy as np
 
 # Paths
-in_path   = "./do_not_touch/postphase2_CorrectpIC50.csv"      # raw file
-out_path  = "./do_not_touch/postphase2_cleaned.csv"               # cleaned file
+in_path   = "./do_not_touch/postphase2_CorrectpIC50.csv"      
+out_path  = "./do_not_touch/postphase2_cleaned.csv"               
 
 # DF
 df = pd.read_csv(in_path)
-before = len(df)                               # initial row count
+before = len(df)                              
 
 # Define chemically plausible window for pIC50
 lower_bound = 4.0      #  pIC50  < 4  ⇒  IC50 > 100 µM  = biologically meaningless
