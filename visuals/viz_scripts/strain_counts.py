@@ -24,7 +24,7 @@ else:
 strain_counts_df = pd.DataFrame(strain_counts.items(), columns=["Strain", "Count"])
 
 # File path for the new CSV
-output_csv_path = "./str_counts_final_scaff.csv"
+output_csv_path = "./str_counts.csv"
 
 # Save the DataFrame to a new CSV file
 strain_counts_df.to_csv(output_csv_path, index=False)

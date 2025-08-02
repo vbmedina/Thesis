@@ -21,10 +21,10 @@ else:
     molecule_counts = Counter() 
 
 # Create a DF from the strain counts
-molecule_counts_df = pd.DataFrame(molecule_counts.items(), columns=["Chemical", "Count"])
+molecule_counts_df = pd.DataFrame(molecule_counts.items(), columns=["Molecule", "Count"])
 
 # File path for the new CSV
-output_csv_path = "./chem_counts_final_scaff.csv"
+output_csv_path = "./mol_counts.csv"
 
 # Save the DF to a new CSV file
 molecule_counts_df.to_csv(output_csv_path, index=False)

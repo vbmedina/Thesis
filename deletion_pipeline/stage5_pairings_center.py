@@ -73,7 +73,7 @@ def match_pIC50(row):
         print(row.name)
     strain = row['Strains']
     chemical = row['Molecule_ChEMBL_ID']
-    match = pairings_df[(pairings_df['Strain'] == strain) & (pairings_df['Chemical'] == chemical)]
+    match = pairings_df[(pairings_df['Strain'] == strain) & (pairings_df['Molecule'] == chemical)]
     if not match.empty:
         return match['Representative_pIC50'].values[0]
 

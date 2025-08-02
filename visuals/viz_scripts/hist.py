@@ -7,7 +7,7 @@ from matplotlib.colors import TwoSlopeNorm
 
 # Top 50 Strains by Molecule Pairings (Non-Unique) ---------------------------------------------------------------
 # Load data
-strain_data = pd.read_csv("./final_strain_counts.csv")
+strain_data = pd.read_csv("./str_counts.csv")
 
 # Sort top 50 strains
 top_strains = strain_data.nlargest(50, 'Count').sort_values(by='Count', ascending=False)
@@ -32,7 +32,7 @@ plt.show()
 
 # Top 50 Molecules by Strain Pairings (Non-Unique) ---------------------------------------------------------------
 # Load data
-molecule_data = pd.read_csv("./final_mol_counts.csv")
+molecule_data = pd.read_csv("./mol_counts.csv")
 
 # Sort top 50 molecules
 top_molecules = molecule_data.nlargest(50, 'Count').sort_values(by='Count', ascending=False)
@@ -42,7 +42,7 @@ molecule_palette = sns.color_palette("Reds", n_colors=50)[::-1]
 
 # Generate molecule barplot
 plt.figure(figsize=(14, 8))
-sns.barplot(data=top_molecules, x='Chemical', y='Count', palette=molecule_palette)
+sns.barplot(data=top_molecules, x='Molecule', y='Count', palette=molecule_palette)
 
 # Customizations
 plt.xticks(rotation=45, ha='right', fontsize=7)
@@ -60,7 +60,7 @@ plt.show()
 pairings_data = pd.read_csv("./pairings_center.csv")
 
 # Calculate unique strains tested per molecule
-unique_strain_counts = (pairings_data.groupby('Chemical')['Strain'].nunique()
+unique_strain_counts = (pairings_data.groupby('Molecule')['Strain'].nunique()
     .nlargest(50)
     .reset_index()
     .sort_values(by='Strain', ascending=False))
