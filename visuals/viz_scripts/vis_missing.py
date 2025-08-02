@@ -28,7 +28,7 @@ sorted_cols = binary_matrix.sum(axis=0).sort_values(ascending=False).index
 binary_matrix = binary_matrix.loc[sorted_rows, sorted_cols]
 
 # Generate pIC50 heatmap matrix using layout
-pic50_pivot = center_df.pivot_table(index="Chemical", columns=center_df.index, values="Representative_pIC50")
+pic50_pivot = center_df.pivot_table(index="Molecule", columns=center_df.index, values="Representative_pIC50")
 ordered_pic50 = pic50_pivot.loc[sorted_rows, sorted_cols]
 
 # Compute completeness

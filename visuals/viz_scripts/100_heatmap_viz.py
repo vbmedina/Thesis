@@ -13,7 +13,7 @@ top_100 = df_heatmap_clean.sort_values(by="Representative_pIC50", ascending=Fals
 print(top_100["Representative_pIC50"])
 
 # Pivot the table for heatmap
-heatmap_data = top_100.pivot_table(index="Chemical", columns="Strain", values="Representative_pIC50")
+heatmap_data = top_100.pivot_table(index="Molecule", columns="Strain", values="Representative_pIC50")
 
 # Plot heatmap 
 plt.figure(figsize=(11, 7))
