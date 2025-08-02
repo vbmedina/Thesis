@@ -4,9 +4,11 @@ import numpy as np
 import pandas as pd
 from pathlib import Path
 
+# Paths
 chembl = pd.read_csv("/Users/victoriamedina/Thesis_Project/Thesis/Visualizations/chembl_unique.csv")
 couples = pd.read_csv("/Users/victoriamedina/Thesis_Project/Thesis/Visualizations/IC50_freq_with_pIC50.csv")
 
+# Cleaning up the data
 ic50_scores = []
 for i, row in enumerate(couples['IC50 Scores']):
     scores = row.split(":")

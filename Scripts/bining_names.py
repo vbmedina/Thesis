@@ -5,10 +5,10 @@ from difflib import SequenceMatcher
 import pandas as pd
 from collections import Counter
 
-# File path to the CSV
-csv_file_path = "/Users/victoriamedina/Thesis_Project/Thesis/TESTING.csv"
+# File path 
+path = "/Users/victoriamedina/Thesis_Project/Thesis/TESTING.csv"
 
-data = pd.read_csv(csv_file_path)
+data = pd.read_csv(path)
 
 print(data.columns)
 
@@ -22,14 +22,14 @@ if "Standardized Strain" in data.columns:
         print(f"{strain}: {count}")
 else:
     print("The column 'Standardized Strain' does not exist in the CSV file.")
-    strain_counts = Counter()  # Initialize an empty Counter if the column doesn't exist
+    strain_counts = Counter()  
 
-# Create a DataFrame from the strain counts
+# Create DF from the strain counts
 strain_counts_df = pd.DataFrame(strain_counts.items(), columns=["Strain", "Count"])
 
 
-# Save the DataFrame to a new CSV file
-strain_counts_df.to_csv(csv_file_path, index=False)
+# Save DF to new CSV
+strain_counts_df.to_csv(path, index=False)
 
-print(f"Strain counts have been saved to {csv_file_path}")
+print(f"Strain counts have been saved to {path}")
  

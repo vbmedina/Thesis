@@ -5,7 +5,7 @@ from rdkit.Chem.Scaffolds import MurckoScaffold
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-# Load your CSV
+# path
 df = pd.read_csv("/Users/victoriamedina/Thesis_Project/Thesis/Visualizations/chembl_scaf.csv", low_memory=False)
 
 # Generate scaffold column if not present

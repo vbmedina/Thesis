@@ -5,7 +5,7 @@ from pathlib import Path
 import pandas as pd
 import numpy as np
 
-# Define the paths to the CSV files
+# Paths
 MAPPING_CSV_STRAINS = Path("./Do Not Touch/Copy of Information on Datasets Strains.csv")
 MAPPING_CSV_ISOLATES = Path("./Do Not Touch/Copy of Information on Datasets Isolates.csv")
 IN_CSV = Path("./Do Not Touch/prephase1.csv")

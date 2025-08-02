@@ -36,6 +36,7 @@ import pandas as pd
 # unique_flags_df = pd.DataFrame(unique_flags, columns=['Unique Flags'])
 # unique_flags_df.to_csv(unique_output_path, index=False)
 
+# Load the csv
 csv_path = pd.read_csv("./pp_with_resistance_flags.csv")
 flags = pd.read_csv("./unique_flags.csv")
 

@@ -18,7 +18,7 @@ def convert(ic50_nM):
     if ic50_nM <= 0 or pd.isna(ic50_nM):
         return np.nan
     ic50_M = ic50_nM * 1e-9
-    return -np.log10(ic50_M)  # Convert IC50 in nanomolar to pIC50 in M
+    return -np.log10(ic50_M)  
 
 # Apply the conversion to new column
 df['pIC50'] = df['Standard_Value'].apply(convert).round(2)

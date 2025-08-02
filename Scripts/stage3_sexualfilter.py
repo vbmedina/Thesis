@@ -2,16 +2,16 @@ import re
 from pathlib import Path
 import pandas as pd
 
-# ── 1. FILE LOCATIONS ────────────────────────────────────────────
-IN_FILE  = Path("./Do Not Touch/postphase2_CorrectpIC50.csv")
-OUT_FILE_ASEC = Path("./Do Not Touch/postphase3_Asexual_Only.csv")
-OUT_FILE_SEC = Path("./Do Not Touch/postphase3_Sexual_Only.csv")
+# File Paths
+csv_in  = Path("./Do Not Touch/postphase2_CorrectpIC50.csv")
+out_fir = Path("./Do Not Touch/postphase3_Asexual_Only.csv")
+out_sec = Path("./Do Not Touch/postphase3_Sexual_Only.csv")
 
 # ── 2. LOAD DATA ────────────────────────────────────────────────
-df = pd.read_csv(IN_FILE)
+df = pd.read_csv(csv_in)
 
 # ── 3. KEYWORD PATTERN FOR NON-ASEXUAL ASSAYS ──────────────────
-STAGE_PAT = re.compile(r"""
+stage_pat = re.compile(r"""
     (gamet|gametocyte|stage\s?[IVV]+|transmission|block|zygot|ook|
      pfs16|pfs25|pfs230|luc|luciferase|gfp|cbg99?|promoter|reporter|attb|elo1|
      mosq|oocyst|midgut|sporo|sporozoite|
@@ -19,11 +19,11 @@ STAGE_PAT = re.compile(r"""
 """, re.IGNORECASE | re.VERBOSE)
 
 # ── 4. COLUMNS THAT CONTAIN ASSAY TEXT ─────────────────────────
-ASSAY_COLS = df.columns.values
+assay_cols = df.columns.values
 
 # ── 5. FLAG & REMOVE NON-ASEXUAL ROWS ───────────────────────────
-is_sec = df[ASSAY_COLS].fillna("").apply(
-    lambda row: any(STAGE_PAT.search(str(cell)) for cell in row), axis=1
+is_sec = df[assay_cols].fillna("").apply(
+    lambda row: any(stage_pat.search(str(cell)) for cell in row), axis=1
 )
 
 n_total     = len(df)
@@ -38,12 +38,12 @@ df_asec = df[~is_sec].copy()
 df_sec = df[is_sec].copy()
 
 # ── 6. SAVE CLEAN DATA ─────────────────────────────────────────
-df_sec.to_csv(OUT_FILE_SEC, index=False)
+df_sec.to_csv(out_sec, index=False)
 
-print(f"Saved sexual dataset: {OUT_FILE_SEC} "
+print(f"Saved sexual dataset: {out_sec} "
       f"({n_sec:,} rows)")
 
-df_asec.to_csv(OUT_FILE_ASEC, index=False)
+df_asec.to_csv(out_fir, index=False)
 
-print(f"Saved strictly-asexual dataset: {OUT_FILE_ASEC} "
+print(f"Saved strictly-asexual dataset: {out_fir} "
       f"({n_asec:,} rows)")

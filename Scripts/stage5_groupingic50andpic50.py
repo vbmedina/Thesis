@@ -2,9 +2,10 @@
 import pandas as pd
 import numpy as np
 
-# ---------- 1. Load & clean raw data ----------
+# Load DF
 df = pd.read_csv("./pp.csv", low_memory=False)
 
+#Dicts
 ic50_dict = {}
 pic50_dict = {}
 
@@ -24,6 +25,7 @@ for i, row in df.iterrows():
 
 new_data = pd.DataFrame(columns=["Strain", "Chemical", "Frequency", "IC50 Scores", "pIC50 Scores"])
 
+# Populate new DataFrame with collected data
 for key in ic50_dict:
     strain, chemical = key.split("_")
     frequency = len(ic50_dict[key])
@@ -41,4 +43,5 @@ for key in ic50_dict:
     "pIC50 Scores": pic50_str
     }
 
+# Save the new DataFrame to a CSV file
 new_data.to_csv("./pairing_IC50_pIC50.csv", index=False)

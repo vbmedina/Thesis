@@ -2,26 +2,28 @@ from pathlib import Path
 import re, shutil, datetime as dt
 import pandas as pd
 
-# ── 1.  PATHS ───────────────────────────────────────────────────
-CSV = Path("./Do Not Touch/postphase1_strainsMerged.csv")
-CSVOUT = Path("./Do Not Touch/postphase2_convertedUnits.csv")
+# Path
+csv = Path("./Do Not Touch/postphase1_strainsMerged.csv")
+out = Path("./Do Not Touch/postphase2_convertedUnits.csv")
 
-# ── 2.  LOAD ────────────────────────────────────────────────────
-df = pd.read_csv(CSV, low_memory=False)   # low_memory=False suppresses dtype warning
+# Load
+df = pd.read_csv(csv, low_memory=False) 
 
-unit_col = "Standard Units"               # change if your header differs
+unit_col = "Standard Units" 
 val_col  = "Standard_Value"
 
+# Check columns
 before = len(df)
 df = df.dropna(subset=[val_col])
 df = df[df[val_col] > 0] # drop rows with 0
 after = len(df)
 totalDropped = before - after
-# ── 2.1  DELETE NA ────────────────────────────────────────
+
+# Delete rows with empty IC50 values
 print(f"   Empty IC50   : {totalDropped:,}  ({(totalDropped)/before:.2%})")
 print(f"   Rows remaining : {after:,}")
 
-# ── 3.  HELPER: canonicalise unit strings ───────────────────────
+# Canonicalize unit strings
 def canon(u: str) -> str:
     """
     Upper-case, strip non-alphanumerics
@@ -32,13 +34,13 @@ def canon(u: str) -> str:
     u = u.upper()
     return re.sub(r"[^A-Z0-9]", "", u)
 
-# direct factors (canon_string → multiplier for value → nM)
+# Direct factors (canon_string - multiplier for value - nM)
 FACTOR = {
     "NM":        1,
     "NANOMOLAR": 1,
-    "UM":        1_000,         # µM
-    "MM":        1_000_000,     # mM
-    "PM":        0.001,         # pM  (rare)
+    "UM":        1_000,         
+    "MM":        1_000_000,    
+    "PM":        0.001,
 }
 
 # regex for strings like "10^-2microM", "10^-5 uM"
@@ -47,7 +49,7 @@ exp_pat = re.compile(r"10\^?-?(-?\d+)\s*(?:U|MICRO)?M", re.I)
 exp_pat_concentration = re.compile(r"(?:10\^?'?-?(-?\d+)\s*)?(U?)(?:G)/(M?)L", re.I)
 
 # ── 4.  CONVERT row-by-row ──────────────────────────────────────
-unknown_units = {}     # unit_string → count
+unknown_units = {}    
 convertible   = 0
 dropped       = 0
 
@@ -89,15 +91,15 @@ def convert_row(row):
 
 df[val_col] = df.apply(convert_row, axis=1)
 
-# ── 5.  DROP non-convertible rows & fix unit column ─────────────
+# DROP non-convertible rows & fix unit column
 before = len(df)
 df = df.dropna(subset=[val_col])
 after = len(df)
 df[unit_col] = "nM"
 
-# ── 6.  SAVE (overwrite) ────────────────────────────────────────
-df.to_csv(CSVOUT, index=False)
-print(f"\n  Wrote {CSVOUT}")
+# SAVE
+df.to_csv(out, index=False)
+print(f"\n  Wrote {out}")
 print(f"   Converted rows : {convertible:,}")
 print(f"   Dropped rows   : {dropped:,}  ({dropped/before:.2%})")
 print(f"   Rows remaining : {before:,}")
