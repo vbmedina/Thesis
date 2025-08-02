@@ -78,7 +78,7 @@ sns.barplot(data=unique_strain_counts, x='Chemical', y='UniqueStrains', palette=
 plt.xticks(rotation=45, ha='right', fontsize=7)
 plt.xlabel('ChEMBL Molecule Identifier', fontsize=12)
 plt.ylabel('Number of Unique Strains Tested', fontsize=12)
-plt.title('Top 50 Molecules by Unique Strain Coverage', fontsize=14)
+plt.title('Top 50 Molecules by Most Unique Strain Coverage', fontsize=14)
 plt.tight_layout()
 
 # Save and display
