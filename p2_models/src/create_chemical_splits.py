@@ -1,174 +1,178 @@
 # BEFORE RUNNING -------------------------------
-# Conda activate molml
-# Python -m src.create_splits
-
+# conda activate molml
+# python -m src.create_splits
 from pathlib import Path
-import argparse
-import numpy as np
-import pandas as pd
+import argparse, numpy as np, pandas as pd
 from rdkit import Chem
-from rdkit.Chem.Scaffolds import MurckoScaffold
-from sklearn.model_selection import StratifiedKFold
+from rdkit.Chem.Scaffolds.MurckoScaffold import MurckoScaffoldSmilesFromSmiles
+from sklearn.model_selection import (StratifiedKFold,
+                                     StratifiedShuffleSplit,
+                                     GroupKFold)
 
-# Config
-root   = Path(__file__).resolve().parents[1] 
-data   = root / "data"
-tidy   = data / "tidy"
-splits = data / "splits"
-rng    = np.random.default_rng(seed=0)
+# Paths
+ROOT   = Path(__file__).resolve().parents[1]
+DATA   = ROOT / "data"
+TIDY   = DATA / "tidy"
+SPLITS = DATA / "splits"
 
-# Murcko scaffold SMILES (if RDKit cant parse)
+# Helper function to get Murcko scaffold
 def murcko(smiles: str) -> str:
-    mol = Chem.MolFromSmiles(smiles or "")
-    return MurckoScaffold.MurckoScaffoldSmiles(mol) if mol else ""
+    if not smiles:
+        return ""
+    try:
+        return MurckoScaffoldSmilesFromSmiles(smiles, includeChirality=False)
+    except Exception:
+        return ""
 
-#  Write 80/10/10 CSVs for a single fold  
-def write_fold(df_fold: pd.DataFrame, split_dir: Path, fold_id: int) -> None:
-    test_idx  = df_fold.index
-    other_idx = df.index.difference(test_idx)
+# Show distribution of potency bins across train, val, test
+def show_distribution(name, trn, val, tst):
+    def c(d):
+        return (d["potency_bin"].value_counts()
+                  .reindex(["≤5","5-6","6-7","≥7"], fill_value=0))
+    ct, cv, cs = map(c, (trn, val, tst))
+    print(f"\n[{name}]")
+    print("  set      rows   ≤5   5-6   6-7   ≥7")
+    print("  -------------------------------------")
+    print(f"  train {len(trn):7,} {ct['≤5']:5} {ct['5-6']:5} {ct['6-7']:5} {ct['≥7']:5}")
+    print(f"  val   {len(val):7,} {cv['≤5']:5} {cv['5-6']:5} {cv['6-7']:5} {cv['≥7']:5}")
+    print(f"  test  {len(tst):7,} {cs['≤5']:5} {cs['5-6']:5} {cs['6-7']:5} {cs['≥7']:5}")
 
-    # stratified 10 % of “other” rows for validation
-    val_idx = RNG.choice(other_idx, size=int(0.10 * len(df)), replace=False)
-    train_idx = other_idx.difference(val_idx)
+# Write a fold to CSV
+def write_fold(df_test, split_dir, fold_id, df_full, rng):
+    tst_idx  = df_test.index
+    oth_idx  = df_full.index.difference(tst_idx)
+    if oth_idx.empty:
+        raise ValueError("Fold has no train/val rows!")
 
+    # 10 % validation - stratified by potency_bin
+    try:
+        sss = StratifiedShuffleSplit(
+        n_splits=1,
+        test_size=0.10,
+        random_state=int(rng.integers(0, 1_000_000_000))
+    )
+        (_, v_arr) = next(
+            sss.split(
+                df_full.loc[oth_idx],
+                df_full.loc[oth_idx, "potency_bin"]
+            )
+        )
+        val_idx = pd.Index(oth_idx[v_arr])
+    except ValueError:
+        val_idx = pd.Index(
+            rng.choice(oth_idx, int(0.10 * len(df_full)), replace=False)
+        )
+
+    # Remaining rows are training
+    trn_idx = oth_idx.difference(val_idx)
+
+    # Create directory for this fold
     fold_dir = split_dir / f"fold{fold_id}"
     fold_dir.mkdir(parents=True, exist_ok=True)
+    df_full.loc[trn_idx].to_csv(fold_dir/"train.csv", index=False)
+    df_full.loc[val_idx ].to_csv(fold_dir/"val.csv",   index=False)
+    df_full.loc[tst_idx ].to_csv(fold_dir/"test.csv",  index=False)
 
-    df.loc[train_idx].to_csv(fold_dir / "train.csv", index=False)
-    df.loc[val_idx].to_csv  (fold_dir / "val.csv",   index=False)
-    df.loc[test_idx].to_csv (fold_dir / "test.csv",  index=False)
+    # Show distribution
+    return df_full.loc[trn_idx], df_full.loc[val_idx], df_full.loc[tst_idx]
 
-# main 
+# Main function
 if __name__ == "__main__":
+    ap  = argparse.ArgumentParser()
+    ap.add_argument("--seed", type=int, default=0, help="random seed")
+    args = ap.parse_args()
+    rng  = np.random.default_rng(args.seed)
 
-    parser = argparse.ArgumentParser(description="Generate chemistry splits")
-    parser.add_argument("--seed", type=int, default=0, help="RNG seed")
-    args = parser.parse_args()
-    RNG = np.random.default_rng(args.seed)
-
-    # 1  load tidy table
-    tidy_csv = tidy / "pp_tidy.csv"
-    if not tidy_csv.exists():
-        raise FileNotFoundError(f"{tidy_csv} not found.")
-
-    df = pd.read_csv(tidy_csv)
+    # Load tidy table
+    df = pd.read_csv(TIDY / "pp_tidy.csv", low_memory=False)
     print(f"Loaded {len(df):,} rows")
 
-    # 2  helper columns
-    df["potency_bin"] = pd.cut(
-        df.pIC50, bins=[-1, 5, 6, 7, 99], labels=["≤5", "5-6", "6-7", "≥7"]
-    )
-    mol_freq = df.groupby("compound_id").size()
-    df["mol_freq"] = df.compound_id.map(mol_freq)
+    # Helper columns
+    df["potency_bin"] = pd.cut(df.pIC50, [-1,5,6,7,99],
+                               labels=["≤5","5-6","6-7","≥7"])
+    freq = df.groupby("Molecule_ChEMBL_ID").size()
+    df["mol_freq"] = df["Molecule_ChEMBL_ID"].map(freq)
+    df["scaffold"] = df["Smiles"].map(murcko)
 
-    df["scaffold"] = df.SMILES.map(murcko)
+# # ----------------------------------------------------------------
+# # Comment out the sections you run  5 ─ UMAP-HDBSCAN or Butina
+#     # 3 ─ random-stratified
+#     strat = (df["Strains"] + "_" +
+#              df.potency_bin.astype(str) + "_" +
+#              pd.qcut(df.mol_freq,[0,.8,.95,1],
+#                      labels=["common","frequent","hyper"]).astype(str))
+#     skf = StratifiedKFold(5, shuffle=True, random_state=args.seed)
+#     rnd_dir = SPLITS/"random"
+#     for f, (_, tst) in enumerate(skf.split(df, strat)):
+#         trn, val, tst = write_fold(df.loc[tst], rnd_dir, f, df, rng)
+#         show_distribution(f"random | fold{f}", trn, val, tst)
+#     print("\n✓ random 5-fold CSVs →", rnd_dir)
 
-    # 3  Random-stratified split 
-    strat_key = (
-        df.strain + "_" +
-        df.potency_bin.astype(str) + "_" +
-        pd.qcut(df.mol_freq, [0, .8, .95, 1],
-                labels=["common", "frequent", "hyper"]).astype(str)
-    )
-
-    skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=args.seed)
-    split_dir = splits / "random"
-    for fold, (_, test_idx) in enumerate(skf.split(df, strat_key)):
-        write_fold(df.loc[test_idx], split_dir, fold)
-    print("✓ random-stratified 5-fold saved to", split_dir)
-
-    # 4  Scaffold split 
-
-    scaf_groups = df["scaffold"].unique()
-    RNG.shuffle(scaf_groups)
-    chunks = np.array_split(scaf_groups, 5)
-
-    split_dir = splits / "scaffold"
-    for fold, chunk in enumerate(chunks):
-        idx = df[df.scaffold.isin(chunk)].index
-        write_fold(df.loc[idx], split_dir, fold)
-    print("✓ scaffold 5-fold saved to", split_dir)
+#     # 4 ─ scaffold with GroupKFold
+#     gkf = GroupKFold(5)
+#     scaf_dir = SPLITS/"scaffold"
+#     for f, (_, tst) in enumerate(gkf.split(df, groups=df["scaffold"])):
+#         trn, val, tst = write_fold(df.loc[tst], scaf_dir, f, df, rng)
+#         show_distribution(f"scaffold | fold{f}", trn, val, tst)
+#     print("\n✓ scaffold 5-fold CSVs →", scaf_dir)
+# # -----------------------------------------------------------------
 
 # # Run the following seperately if you have UMAP and HDBSCAN installed
 # # Otherwise, it will fall back to Butina clustering
-# # 5  UMAP-cluster split  (strictest chemistry novelty)
-# try:
-#     import umap, hdbscan
-#     from rdkit.Chem import AllChem, DataStructs
+    # 5 ─ UMAP-HDBSCAN or Butina
+    try:
+        import umap, hdbscan
+        from rdkit.Chem import AllChem, DataStructs
 
-#     print("→ generating UMAP-HDBSCAN clusters ...")
+# UMAP + HDBSCAN clustering
+        print("\n→ generating UMAP-HDBSCAN clusters …")
+        def ecfp_bits(smi, bits=2048):
+            mol = Chem.MolFromSmiles(smi or "")
+            fp  = AllChem.GetMorganFingerprintAsBitVect(mol, 2, bits) if mol else None
+            arr = np.zeros((1,), np.uint8)
+            DataStructs.ConvertToNumpyArray(fp, arr)
+            return arr
 
-#     # 5-A  Morgan (ECFP4) fingerprints → dense NumPy
-#     def ecfp_bits(smiles, n_bits=2048):
-#         mol = Chem.MolFromSmiles(smiles or "")
-#         fp = AllChem.GetMorganFingerprintAsBitVect(mol, radius=2, nBits=n_bits) if mol else None
-#         arr = np.zeros((1,), dtype=np.uint8)
-#         DataStructs.ConvertToNumpyArray(fp, arr)
-#         return arr
+    # Generate ECFP fingerprints and UMAP embedding
+        fps = np.vstack(df["Smiles"].map(ecfp_bits))
+        emb = umap.UMAP(metric="jaccard", n_neighbors=50,
+                        min_dist=0.1, random_state=args.seed).fit_transform(fps)
+        df["umap_cluster"] = hdbscan.HDBSCAN(min_cluster_size=25).fit(emb).labels_
 
-#     fps = np.vstack(df.SMILES.map(ecfp_bits).tolist())            # (N, 2048)
+    # Write UMAP clusters to CSV
+        umap_dir = SPLITS / "umap"
+        for f, clusters in enumerate(np.array_split(df.umap_cluster.unique(), 5)):
+            idx = df[df.umap_cluster.isin(clusters)].index
+            trn, val, tst = write_fold(df.loc[idx], umap_dir, f, df, rng)
+            show_distribution(f"umap | fold{f}", trn, val, tst)
+        print("\n✓ umap 5-fold CSVs →", umap_dir)
 
-#     # 5-B  2-D UMAP embedding with Jaccard metric
-#     emb = umap.UMAP(metric="jaccard", n_neighbors=50,
-#                     min_dist=0.1, random_state=args.seed).fit_transform(fps)
+    # Fallback to Butina clustering if UMAP or HDBSCAN is not available
+    except ImportError:
+        from rdkit import DataStructs
+        from rdkit.Chem import AllChem
+        from rdkit.ML.Cluster import Butina
 
-#     # 5-C  Density clustering
-#     clusterer = hdbscan.HDBSCAN(min_cluster_size=25,
-#                                 metric="euclidean",
-#                                 cluster_selection_epsilon=0.5,
-#                                 prediction_data=False).fit(emb)
-#     df["umap_cluster"] = clusterer.labels_          # -1 = noise
-
-#     # 5-D  Group-K-fold on cluster IDs
-#     split_dir = SPLITS / "umap"
-#     clusters = df.umap_cluster.unique()
-#     RNG.shuffle(clusters)
-#     chunks = np.array_split(clusters, 5)
-
-#     for fold, chunk in enumerate(chunks):
-#         idx = df[df.umap_cluster.isin(chunk)].index
-#         write_fold(df.loc[idx], split_dir, fold)
-#     print("✓ umap 5-fold saved to", split_dir)
-
-# except ImportError:
-
-#     # (Fallback) Butina Tanimoto clustering
-
-#     from rdkit import DataStructs
-#     from rdkit.Chem import AllChem
-#     from rdkit.ML.Cluster import Butina
-
-#     print("UMAP or hdbscan missing → falling back to Butina clustering ...")
-
-#     n_bits = 2048
-#     fps = [AllChem.GetMorganFingerprintAsBitVect(Chem.MolFromSmiles(smi or ""),
-#                                                  radius=2, nBits=n_bits)
-#            for smi in df.SMILES]
-
-#     # pairwise similarity list required by Butina
-#     dists = []
-#     nfps = len(fps)
-#     for i in range(1, nfps):
-#         sims = DataStructs.BulkTanimotoSimilarity(fps[i], fps[:i])
-#         dists.extend([1 - x for x in sims])
-
-#     clusters = Butina.ClusterData(dists, nfps, distThresh=0.3, isDistData=True)
-#     # Butina returns a list of tuples of indices
-#     cluster_id = np.full(nfps, -1, dtype=int)
-#     for cid, tup in enumerate(clusters):
-#         cluster_id[list(tup)] = cid
-#     df["butina_cluster"] = cluster_id
-
-#     split_dir = splits / "butina"
-#     clusters = np.unique(cluster_id)
-#     RNG.shuffle(clusters)
-#     chunks = np.array_split(clusters, 5)
-
-#     for fold, chunk in enumerate(chunks):
-#         idx = df[df.butina_cluster.isin(chunk)].index
-#         write_fold(df.loc[idx], split_dir, fold)
-#     print("✓ butina 5-fold saved to", split_dir)
-
+        print("\nUMAP/HDBSCAN missing – Butina clustering …")
+        fps = [AllChem.GetMorganFingerprintAsBitVect(Chem.MolFromSmiles(s or ""),
+                                                     2, 2048) for s in df["Smiles"]]
+    # Butina clustering
+        dists=[]
+        for i in range(1,len(fps)):
+            sims=DataStructs.BulkTanimotoSimilarity(fps[i], fps[:i])
+            dists.extend([1-x for x in sims])
+        clusters = Butina.ClusterData(dists, len(fps), 0.3, True)
+        cid = np.full(len(fps), -1, int)
+        for n,tup in enumerate(clusters): cid[list(tup)] = n
+        df["butina_cluster"]=cid
+   
+    # Write Butina clusters to CSV
+        but_dir = SPLITS / "butina"
+        for f, cls in enumerate(np.array_split(df.butina_cluster.unique(), 5)):
+            idx = df[df.butina_cluster.isin(cls)].index
+            trn, val, tst = write_fold(df.loc[idx], but_dir, f, df, rng)
+            show_distribution(f"butina | fold{f}", trn, val, tst)
+        print("\n✓ butina 5-fold CSVs →", but_dir)
 # ---------------------------------------------------------------------------
 
-    print("All splits complete.")
+    print("\nAll splits complete.")
