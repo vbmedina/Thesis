@@ -85,4 +85,4 @@ if __name__ == "__main__":
     cold_both.to_csv (out/"cold_both.csv", index=False)
 
     show("cold_split", warm, cold_cmpd_, cold_str_, cold_both)
-    print("\n cold_split CSVs - ", out)
+    print("\n cold_split CSVs ", out)
