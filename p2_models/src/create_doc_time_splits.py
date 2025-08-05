@@ -21,14 +21,14 @@ YEAR_COL = "Year"
 # Print distribution of potency bins across train, val, test
 def show(name, *frames):
     def cnt(f):
-        return (f["potency_bin"].value_counts().reindex(["≤5","5-6","6-7","≥7"], fill_value=0))
+        return (f["potency_bin"].value_counts().reindex(["<=5.0","5.0-6.0","6.0-7.5",">=7.5"], fill_value=0))
     tags = ["train","val","test"]
     print(f"\n[{name}]")
-    head = "  set      rows   ≤5   5-6   6-7   ≥7"
+    head = "  set      rows   <=5.0   5.0-6.0   6.0-7.5   >=7.5"
     print(head, "\n  " + "-"*(len(head)-2))
     for tag, df_, ct in zip(tags, frames, map(cnt, frames)):
-        print(f"  {tag:<6} {len(df_):7,} {ct['≤5']:5} {ct['5-6']:5} "
-              f"{ct['6-7']:5} {ct['≥7']:5}")
+        print(f"  {tag:<6} {len(df_):7,} {ct['<=5.0']:5} {ct['5.0-6.0']:5} "
+              f"{ct['6.0-7.5']:5} {ct['>=7.5']:5}")
 
 # Splirt writing helper
 def write_fold(test_idx, out_dir, fold_id, df_full, rng):
@@ -58,7 +58,7 @@ if __name__ == "__main__":
 
     # Load tidy table
     df = pd.read_csv(TIDY_CSV, low_memory=False)
-    df["potency_bin"] = pd.cut(df.pIC50, [-1,5,6,7,99], labels=["≤5","5-6","6-7","≥7"])
+    df["potency_bin"] = pd.cut(df.pIC50, [-1,5,6,7,99], labels=["<=5.0","5.0-6.0","6.0-7.5",">=7.5"])
    
     if DOC_COL not in df.columns:
         raise KeyError(f"Document column “{DOC_COL}” not found in {TIDY_CSV.name}")
