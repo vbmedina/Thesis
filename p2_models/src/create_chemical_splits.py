@@ -1,211 +1,172 @@
-# BEFORE RUNNING:
-# conda activate molml
-# python -m src.create_chemical_splits
-from pathlib import Path
-import argparse, numpy as np, pandas as pd
-from rdkit import Chem
-from rdkit.Chem.Scaffolds.MurckoScaffold import MurckoScaffoldSmilesFromSmiles
-from sklearn.model_selection import StratifiedShuffleSplit
+#  Run after   conda activate molml
+# Random, Random-Sim (fingerprint diversity), Scaffold, Butina, UMAP-HDBSCAN
 
-# Paths
-ROOT = Path(__file__).resolve().parents[1]
-DATA = ROOT / "data"
-TIDY = DATA / "tidy"
-SPLITS = DATA / "splits"
+# Imports
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+import umap, hdbscan
+import argparse
+import os
+import time
+import random
+import pickle
+import pathlib
+import deepchem as dc
+from rdkit import Chem, DataStructs
+from rdkit.Chem import AllChem, Scaffolds
+from rdkit.ML.Cluster import Butina
 
-# Helper function to get Murcko scaffold
-def murcko(smiles: str) -> str:
-    if not smiles:
-        return ""
-    try:
-        return MurckoScaffoldSmilesFromSmiles(smiles, includeChirality=False)
-    except Exception:
-        return ""
+# Set random seed
+SEED = 0
+np.random.seed(SEED)
+INPUTFILE = "pp_tidy.csv"
 
-# Show distribution of potency bins across train, val, test
-def show_distribution(name, trn, val, tst):
-    def c(d):
-        return (d["potency_bin"].value_counts()
-                  .reindex(["<=5.0","5.0-6.0","6.0-7.5",">=7.5"], fill_value=0))
-    ct, cv, cs = map(c, (trn, val, tst))
-    print(f"\n[{name}]")
-    print("  set      rows   <=5.0   5.0-6.0   6.0-7.5   >=7.5")
-    print("  -------------------------------------")
-    print(f"  train {len(trn):7,} {ct['<=5.0']:5} {ct['5.0-6.0']:5} {ct['6.0-7.5']:5} {ct['>=7.5']:5}")
-    print(f"  val   {len(val):7,} {cv['<=5.0']:5} {cv['5.0-6.0']:5} {cv['6.0-7.5']:5} {cv['>=7.5']:5}")
-    print(f"  test  {len(tst):7,} {cs['<=5.0']:5} {cs['5.0-6.0']:5} {cs['6.0-7.5']:5} {cs['>=7.5']:5}")
+# Split object
+def main():
+    out_root = pathlib.Path("/Users/victoriamedina/Thesis_Project/thesis/p2_models/data/splits") 
+    log = []
 
-# Write a fold to CSV
-def write_fold(df_test, split_dir, fold_id, df_full, rng):
-    tst_idx  = df_test.index
-    oth_idx  = df_full.index.difference(tst_idx)
-    if oth_idx.empty:
-        raise ValueError("Fold has no train/val rows!")
+    df = pd.read_csv(INPUTFILE)
+    if {"SMILES","pIC50"}.issubset(df.columns) is False:
+        raise ValueError("CSV must contain SMILES and pIC50 columns.")
+    active_threshold = 6.0
 
-    # 10 % validation - stratified by potency_bin
-    try:
-        sss = StratifiedShuffleSplit(
-            n_splits=1, test_size=0.10,
-            random_state=int(rng.integers(0, 1_000_000_000))
-        )
-        (_, v_arr) = next(
-            sss.split(df_full.loc[oth_idx],
-                      df_full.loc[oth_idx, "potency_bin"])
-        )
-        val_idx = pd.Index(oth_idx[v_arr])
-    except ValueError:
-        val_idx = pd.Index(
-            rng.choice(oth_idx, int(0.10 * len(df_full)), replace=False)
-        )
+    # build DeepChem dataset (y only used for strat QC)
+    y_arr = df["pIC50"].values.reshape(-1,1)
+    ds = dc.data.DiskDataset.from_numpy(
+            X = np.zeros((len(df),1)),
+            y = y_arr,
+            ids = df["SMILES"].values)
 
-    trn_idx = oth_idx.difference(val_idx)
+    # fingerprint cache for similarity stats
+    fps = [morgan_fp(s) for s in df["SMILES"]]
 
-    fold_dir = split_dir / f"fold{fold_id}"
-    fold_dir.mkdir(parents=True, exist_ok=True)
-    df_full.loc[trn_idx].to_csv(fold_dir/"train.csv", index=False)
-    df_full.loc[val_idx].to_csv(fold_dir/"val.csv",   index=False)
-    df_full.loc[tst_idx].to_csv(fold_dir/"test.csv",  index=False)
+    for split_name, fn in SPLITS.items():
+        print(f"\n=== {split_name.upper()} split ===")
+        split_dir = out_root / split_name; split_dir.mkdir(exist_ok=True)
+        folds = fn(ds, k=5, seed=args.seed)
 
-    return df_full.loc[trn_idx], df_full.loc[val_idx], df_full.loc[tst_idx]
+        for f, (train_ds, val_ds, test_ds) in enumerate(folds):
+            foldnum = f+1
+            # dataframe views
+            tr, vl, te = (df.iloc[train_ds.indices],
+                           df.iloc[val_ds.indices],
+                           df.iloc[test_ds.indices])
+            # save CSVs
+            tr.to_csv(split_dir / f"fold{foldnum}_train.csv", index=False)
+            vl.to_csv(split_dir / f"fold{foldnum}_val.csv"  , index=False)
+            te.to_csv(split_dir / f"fold{foldnum}_test.csv" , index=False)
+            # QC print
+            qc_print(split_name, f+1, tr["pIC50"], vl["pIC50"], te["pIC50"],
+                     active_threshold, log)
+            # violin
+            plot_df = pd.concat([tr.assign(split="train"),
+                                 vl.assign(split="val"),
+                                 te.assign(split="test")])
+            save_violin(plot_df, "split", "pIC50",
+                        f"{split_name} fold {foldnum}", split_dir / f"fold{foldnum}_violin.png")
+            # tanimoto stats
+            if split_name in {"random_sim","butina","umap"}:
+                tr_fps = [fps[i] for i in train_ds.indices]
+                mean_sim = []
+                for idx in test_ds.indices:
+                    sims = DataStructs.BulkTanimotoSimilarity(fps[idx], tr_fps)
+                    mean_sim.append(max(sims))
+                line = f"    ↳ mean max-Tanimoto(test-to-train) = {np.mean(mean_sim):.3f}"
+                print(line); log.append(line)
 
-# Main function to create splits
+    # write summary log
+    with open(out_root / "split_stats.log","w") as f:
+        f.write("\n".join(log))
+    print("\nAll splits finished. QC in split_stats.log")
+
 if __name__ == "__main__":
-    SEED = 0
-    rng  = np.random.default_rng(SEED)
-
-    df = pd.read_csv(TIDY / "pp_tidy.csv", dtype={13: "string"})
-    print(f"Loaded {len(df):,} rows")
-
-    df["potency_bin"] = pd.cut(df.pIC50, [-1,5,6,7.5,99],
-                               labels=["<=5.0","5.0-6.0","6.0-7.5",">=7.5"])
-    df["scaffold"] = df["Smiles"].map(murcko)
-# # ----------------------------------------------------------------
-# # 1. random-stratified baseline – even test rows, no grouping
-#     rows = np.arange(len(df))
-#     folds = np.array_split(rows, 5)          # five equal-size slices
-
-#     rnd_dir = SPLITS / "random"
-#     for f, idx in enumerate(folds):
-#         trn, val, tst = write_fold(df.loc[idx], rnd_dir, f, df, rng)
-#         show_distribution(f"random | fold{f}", trn, val, tst)
-#     print("\n random 5-fold CSVs", rnd_dir)
-
-# # ---------------------------------------------------------------------
-# # 2. Scaffold split
-#     scaf_sizes = df.groupby("scaffold").size().sort_values(ascending=False)
-#     scaf_bins  = {i: [] for i in range(5)}
-#     scaf_rows  = [0]*5
-#     for scaf, n in scaf_sizes.items():
-#         fid = scaf_rows.index(min(scaf_rows))
-#         scaf_bins[fid].append(scaf)
-#         scaf_rows[fid] += n
-
-#     scaf_dir = SPLITS / "scaffold"
-#     for f in range(5):
-#         idx = df[df["scaffold"].isin(scaf_bins[f])].index
-#         trn, val, tst = write_fold(df.loc[idx], scaf_dir, f, df, rng)
-#         show_distribution(f"scaffold | fold{f}", trn, val, tst)
-#     print("\n scaffold 5-fold CSVs", scaf_dir)
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--csv", required=True, help="pp_tidy.csv path")
+    ap.add_argument("--out", required=True, help="output root dir for split files")
+    ap.add_argument("--seed", type=int, default=0, help="random seed")
+    args = ap.parse_args()
+    main(args)
 
 
-# ------------------------------------------------------------------
-# 3. Chemistry-cluster split (UMAP-HDBSCAN or Butina)
-    try:
-        import umap,hdbscan
-        from rdkit.Chem import AllChem,DataStructs
+# ────────────────────────────────────────────────────────────────────────── helpers
+def morgan_fp(smiles, r=2, nBits=1024):
+    m = Chem.MolFromSmiles(smiles)
+    return AllChem.GetMorganFingerprintAsBitVect(m, r, nBits)
 
-        print("\n→ UMAP-HDBSCAN clustering …")
-        def ecfp_bits(smi,bits=2048):
-            mol = Chem.MolFromSmiles(smi or "")
-            fp  = AllChem.GetMorganFingerprintAsBitVect(mol,2,bits) if mol else None
-            arr = np.zeros((1,),np.uint8); DataStructs.ConvertToNumpyArray(fp,arr)
-            return arr
+def tanimoto_matrix(fps):
+    n = len(fps)
+    mat = np.empty((n, n), dtype=np.float32)
+    for i, fp in enumerate(fps):
+        sims = DataStructs.BulkTanimotoSimilarity(fp, fps[:i+1])
+        mat[i, :i+1] = sims
+        mat[:i+1, i] = sims
+    return mat
 
-        fps  = np.vstack(df["Smiles"].map(ecfp_bits))
-        emb  = umap.UMAP(metric="jaccard",n_neighbors=50,
-                         min_dist=0.1,random_state=SEED).fit_transform(fps)
-        df["cur_cluster"] = hdbscan.HDBSCAN(min_cluster_size=25)\
-                               .fit(emb).labels_.astype(str)
+def qc_print(split_name, fold, y_train, y_val, y_test, active_threshold, log):
+    total_active = (y_test >= active_threshold).sum()
+    line  = (f"[{split_name} | fold {fold}] "
+             f"train {len(y_train):6,} | val {len(y_val):6,} | test {len(y_test):6,} "
+             f"| actives≥{active_threshold} in test: {total_active:5,}")
+    print(line); log.append(line)
 
-    except ImportError:
-        from rdkit import DataStructs,AllChem
-        from rdkit.ML.Cluster import Butina
+def save_violin(df, label_col, value_col, title, out_png):
+    plt.figure(figsize=(6,4))
+    sns.violinplot(data=df, x=label_col, y=value_col, cut=0, inner="quartile")
+    plt.title(title); plt.tight_layout(); plt.savefig(out_png, dpi=300); plt.close()
 
-        print("\nUMAP/HDBSCAN missing – Butina clustering …")
-        fps=[AllChem.GetMorganFingerprintAsBitVect(
-             Chem.MolFromSmiles(s or ""),2,2048) for s in df["Smiles"]]
-        dists=[]; 
-        for i in range(1,len(fps)):
-            dists.extend([1-x for x in DataStructs.BulkTanimotoSimilarity(fps[i],fps[:i])])
-        clusters = Butina.ClusterData(dists,len(fps),0.3,True)
-        df["cur_cluster"] = pd.Series(clusters,dtype="int").astype(str)
+# ───────────────────────────────────────────────────────────────────── split blocks
+def split_random(ds, k, seed):
+    return dc.splits.RandomSplitter().k_fold_split(ds, k=k, seed=seed)
 
-# Distrbute noise
-    noise_idx  = df[df.cur_cluster == "-1"].index
-    df.loc[noise_idx,"cur_cluster"] = "-1"
-    noise_slices = np.array_split(noise_idx,5)
+def split_random_sim(ds, k, seed):
+    """FingerprintSplitter → 5 folds."""
+    splitter = dc.splits.FingerprintSplitter()
+    return splitter.k_fold_split(ds, k=k)          # deterministic; seed ignored
 
-    bins, rows = {i:set() for i in range(5)}, [0]*5
-    for f in range(5):
-        nid = f"noise_{f}"
-        df.loc[noise_slices[f],"cur_cluster"] = nid
-        bins[f].add(nid); rows[f] += len(noise_slices[f])
+def split_scaffold(ds, k, seed):
+    return dc.splits.ScaffoldSplitter().k_fold_split(ds, k=k, seed=seed)
 
-# Greedy balancing
-    clus_sizes = (df.cur_cluster.value_counts()
-                  .drop([f"noise_{i}" for i in range(5)])).to_dict()
+def split_butina(ds, k, seed, cutoff=0.6):
+    return dc.splits.ButinaSplitter(cutoff).k_fold_split(ds, k=k, seed=seed)
 
-    for cid,n in sorted(clus_sizes.items(), key=lambda kv:-int(kv[0])):
-        fid = rows.index(min(rows))
-        bins[fid].add(cid); rows[fid] += n
+def split_umap_hdb(ds, k, seed):
+    """Custom: UMAP(ECFP) → HDBSCAN clusters → greedy fold assignment."""
+    smiles = ds.ids; fps = [morgan_fp(s) for s in smiles]
+    arr    = np.asarray([np.frombuffer(fp.ToBitString().encode('utf-8'), 'S1').view('i1')
+                         for fp in fps])           # binary array (n,1024)
+    emb    = umap.UMAP(n_components=2, random_state=seed).fit_transform(arr)
+    clus   = hdbscan.HDBSCAN(min_cluster_size=25).fit(emb).labels_
+    # assign noise points (-1) to their own clusters
+    uniq = np.unique(clus)
+    clusters = {c: np.where(clus==c)[0].tolist() for c in uniq}
+    if -1 in clusters:
+        for i in clusters[-1]:
+            clusters[i] = [i]                      # singleton clusters
+        del clusters[-1]
+    # sort clusters by size & drop into folds round-robin
+    fold_inds = [[] for _ in range(k)]
+    for c_idx in sorted(clusters, key=lambda c: len(clusters[c]), reverse=True):
+        smallest = min(range(k), key=lambda f: len(fold_inds[f]))
+        fold_inds[smallest].extend(clusters[c_idx])
+    # build (train,val,test) tuples as DeepChem expects
+    folds = []
+    for f in range(k):
+        test   = np.array(fold_inds[f])
+        other  = np.setdiff1d(np.arange(len(ds)), test)
+        val    = other[::10]                       # 10 % val stratified by order
+        train  = np.setdiff1d(other, val)
+        folds.append((train, val, test))
+    return [ds.select(t)[0] for t in folds]        # convert index triplets to Datasets
 
-# X^2 balancing
-    global_cnt = df["potency_bin"].value_counts()
-    def chi2(cnt):
-        return sum((cnt.get(c,0)-global_cnt[c]*cnt.sum()/len(df))**2 /
-                   (global_cnt[c]*cnt.sum()/len(df)) for c in global_cnt.index)
 
-    for _ in range(1000):
-        a,b = rng.integers(0,5,size=2)
-        if not bins[a] or not bins[b]: continue
-        ca,cb = rng.choice(list(bins[a])), rng.choice(list(bins[b]))
-        if ca==cb: continue
-        bins[a].remove(ca); bins[b].remove(cb)
-        bins[a].add(cb);    bins[b].add(ca)
-
-        before=chi2(df.loc[df.cur_cluster.isin(bins[a]),"potency_bin"].value_counts())+\
-               chi2(df.loc[df.cur_cluster.isin(bins[b]),"potency_bin"].value_counts())
-        after =chi2(df.loc[df.cur_cluster.isin(bins[a]),"potency_bin"].value_counts())+\
-               chi2(df.loc[df.cur_cluster.isin(bins[b]),"potency_bin"].value_counts())
-        if after>=before:
-            bins[a].remove(cb); bins[b].remove(ca)
-            bins[a].add(ca);   bins[b].add(cb)
-
-# Row Count Swap
-target = len(df) // 5
-for _ in range(2000):
-    big = rows.index(max(rows))
-    small = rows.index(min(rows))
-    if rows[big] - rows[small] <= 50:
-        break
-
-    # choose the smallest cluster in the big fold
-    move = min((cid for cid in bins[big]),
-               key=lambda cid: df.cur_cluster.eq(cid).sum())
-
-    bins[big].remove(move); bins[small].add(move)
-    n = df.cur_cluster.eq(move).sum()
-    rows[big]  -= n
-    rows[small]+= n
-    
-# Writing folds
-    out_dir = SPLITS/"umap"
-    for f in range(5):
-        idx = df[df.cur_cluster.isin(bins[f])].index
-        trn,val,tst = write_fold(df.loc[idx], out_dir, f, df, rng)
-        show_distribution(f"umap | fold{f}", trn,val,tst)
-
-    print("\n UMAP 5-fold CSVs", out_dir)
-
-# ---------------------------------------------------------------------
-    print("\n All splits complete.")
+# map names → splitter function
+SPLITS = {
+    "random"     : split_random,
+    "random_sim" : split_random_sim,
+    "scaffold"   : split_scaffold,
+    "butina"     : split_butina,
+    "umap"       : split_umap_hdb,
+}
