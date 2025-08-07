@@ -1,0 +1,10 @@
+[umap | fold 1] train 29,475 | val  3,274 | test  6,875 | actives≥6.0 in test: 4,549
+    ↳ mean max-Tanimoto(test→train) = 0.694
+[umap | fold 2] train 29,475 | val  3,274 | test  6,875 | actives≥6.0 in test: 3,994
+    ↳ mean max-Tanimoto(test→train) = 0.615
+[umap | fold 3] train 29,475 | val  3,275 | test  6,874 | actives≥6.0 in test: 3,431
+    ↳ mean max-Tanimoto(test→train) = 0.618
+[umap | fold 4] train 29,475 | val  3,275 | test  6,874 | actives≥6.0 in test: 3,989
+    ↳ mean max-Tanimoto(test→train) = 0.636
+[umap | fold 5] train 29,475 | val  3,275 | test  6,874 | actives≥6.0 in test: 3,901
+    ↳ mean max-Tanimoto(test→train) = 0.614
