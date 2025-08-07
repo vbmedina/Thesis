@@ -149,10 +149,10 @@ def ensure_val(train_ds, test_ds, val_frac=0.10, seed=0):
 
 # Map names
 SPLITS = {
-    # "random"     : split_random,
-    # "random_sim" : split_random_sim,
-    # "scaffold"   : split_scaffold,
-    # "butina"     : split_butina,
+    "random"     : split_random,
+    "random_sim" : split_random_sim,
+    "scaffold"   : split_scaffold,
+    "butina"     : split_butina,
     "umap"       : split_umap_hdb,
 }
 
@@ -201,9 +201,9 @@ def main():
             te = ds_to_df(test_ds)
 
             # Save CSVs
-            tr.to_csv(split_dir / f"fold{foldnum}_train.csv", index=False)
-            vl.to_csv(split_dir / f"fold{foldnum}_val.csv"  , index=False)
-            te.to_csv(split_dir / f"fold{foldnum}_test.csv" , index=False)
+            tr.to_csv(split_dir / f"{split_name}_fold_{foldnum}_train.csv", index=False)
+            vl.to_csv(split_dir / f"{split_name}_fold{foldnum}_val.csv"  , index=False)
+            te.to_csv(split_dir / f"{split_name}_fold{foldnum}_test.csv" , index=False)
 
             # QC print
             qc_print(split_name, f+1, tr["pIC50"], vl["pIC50"], te["pIC50"],
@@ -214,7 +214,7 @@ def main():
                                  vl.assign(split="val"),
                                  te.assign(split="test")])
             save_violin(plot_df, "split", "pIC50",
-                        f"{split_name} fold {foldnum}", split_dir / f"fold{foldnum}_violin.png")
+                        f"{split_name} fold {foldnum}", split_dir / f"{split_name}_fold{foldnum}_violin.png")
             # Tanimoto stats
             if split_name in {"random_sim","butina","umap"}:
                 tr_fps = [fps[id2row[smi]] for smi in train_ds.ids]
