@@ -1,5 +1,4 @@
 # conda activate molml
-
 import pandas as pd
 import numpy as np
 from pathlib import Path
@@ -13,15 +12,15 @@ import hdbscan
 
 RDLogger.DisableLog("rdApp.warning")
 
-# -------------------- config --------------------
+# Inital Settings
 SEED = 0
 np.random.seed(SEED)
 INPUTFILE = "/Users/victoriamedina/Thesis_Project/thesis/p2_models/data/tidy/pp_tidy.csv"
-OUTROOT  = Path("/Users/victoriamedina/Thesis_Project/thesis/p2_models/data/splits")
+OUTROOT  = Path("/Users/victoriamedina/Thesis_Project/thesis/p2_models/data/testing")
 K = 5
 ACTIVE_THRESHOLD = 6.0
 
-# -------------------- chem utils --------------------
+# Morgan fingerprint helpers
 def morgan_fp(smi, r=2, nBits=1024):
     m = Chem.MolFromSmiles(smi)
     return AllChem.GetMorganFingerprintAsBitVect(m, r, nBits)
@@ -31,7 +30,7 @@ def fp_to_numpy(fp, nBits=1024):
     DataStructs.ConvertToNumpyArray(fp, arr)
     return arr
 
-# -------------------- logging --------------------
+# Print statement for folds
 def qc_print(split_name, fold, y_train, y_test, active_threshold, log):
     n_active_test = (y_test >= active_threshold).sum()
     line = (f"[{split_name} | fold {fold}] "
@@ -39,18 +38,19 @@ def qc_print(split_name, fold, y_train, y_test, active_threshold, log):
             f"| actives≥{active_threshold} in test: {n_active_test:5,}")
     print(line); log.append(line)
 
-# -------------------- baseline k-fold splits --------------------
+# Splits and folds -------------------------------------------------------
+# Random
 def split_random(ds, k, seed):
     # DeepChem returns [(train, test)], we treat test as test
     return dc.splits.RandomSplitter().k_fold_split(ds, k=k, seed=seed)
-
+# Scaffold
 def split_scaffold(ds, k, seed):
     return dc.splits.ScaffoldSplitter().k_fold_split(ds, k=k, seed=seed)
-
+# Butina
 def split_butina(ds, k, seed, cutoff=0.6):
     return dc.splits.ButinaSplitter(cutoff).k_fold_split(ds, k=k, seed=seed)
 
-# -------------------- UMAP -> Agglomerative (fixed-k) --------------------
+# UMAP (K fixed) ---- Block
 def split_umap_k(ds, k, seed):
     smiles = ds.ids
     fps = [morgan_fp(s) for s in smiles]
@@ -76,7 +76,7 @@ def split_umap_k(ds, k, seed):
         folds.append((train_ds, test_ds))
     return folds
 
-# -------------------- UMAP -> HDBSCAN (cluster-balanced k folds) --------------------
+# UMAP (HDBSCAN) ---- Block
 def split_umap_hdb(ds, k, seed):
     smiles = ds.ids
     fps = [morgan_fp(s) for s in smiles]
@@ -92,18 +92,17 @@ def split_umap_hdb(ds, k, seed):
 
     labels = hdbscan.HDBSCAN(min_cluster_size=25, min_samples=10).fit(emb).labels_
 
-    # group indices by cluster
+    # Group indices by cluster
     clusters = {}
     for i, c in enumerate(labels):
         clusters.setdefault(c, []).append(i)
 
-    # treat noise (-1) as singletons
     if -1 in clusters:
         for i in clusters[-1]:
             clusters[i] = [i]
         del clusters[-1]
 
-    # round-robin assign clusters to k folds for balance
+    # Round-robin assign clusters to k folds
     fold_bins = [[] for _ in range(k)]
     for c in sorted(clusters, key=lambda x: len(clusters[x]), reverse=True):
         tgt = min(range(k), key=lambda f: len(fold_bins[f]))
@@ -119,16 +118,16 @@ def split_umap_hdb(ds, k, seed):
         folds.append((train_ds, test_ds))
     return folds
 
-# -------------------- registry --------------------
+# Splits reg
 SPLITS = {
     "random"   : split_random,
     "scaffold" : split_scaffold,
     "butina"   : split_butina,
-    "umap"     : split_umap_k,     # UMAP (fixed-k)
-    "umap_hdb" : split_umap_hdb,   # UMAP + HDBSCAN
+    "umap"     : split_umap_k,
+    "umap_hdb" : split_umap_hdb,
 }
 
-# -------------------- main --------------------
+# Main dir
 def main():
     OUTROOT.mkdir(parents=True, exist_ok=True)
     log = []
@@ -137,7 +136,7 @@ def main():
     if not {"Smiles", "pIC50"}.issubset(df.columns):
         raise ValueError("CSV must contain Smiles and pIC50 columns.")
 
-    # build DeepChem dataset
+    # DeepChem dataset
     y_arr = df["pIC50"].values.reshape(-1, 1)
     ds = dc.data.DiskDataset.from_numpy(
         X=np.zeros((len(df), 1)),
@@ -145,7 +144,7 @@ def main():
         ids=df["Smiles"].values
     )
 
-    # for similarity stats
+    # Similarity stats
     fps = [morgan_fp(s) for s in df["Smiles"]]
     id2row = dict(zip(df["Smiles"], df.index))
 
@@ -163,13 +162,13 @@ def main():
         for f, (train_ds, test_ds) in enumerate(folds, start=1):
             tr, vl = ds_to_df(train_ds), ds_to_df(test_ds)
 
-            # save only train/test
+            # Save train/test
             tr.to_csv(split_dir / f"{split_name}_fold_{f}_train.csv", index=False)
             vl.to_csv(split_dir / f"{split_name}_fold_{f}_test.csv",   index=False)
 
             qc_print(split_name, f, tr["pIC50"], vl["pIC50"], ACTIVE_THRESHOLD, log)
 
-            # mean max-Tanimoto(test-train)
+            # Mean max-Tanimoto(test-train)
             tr_fps = [fps[id2row[smi]] for smi in train_ds.ids]
             max_sims = []
             for smi in test_ds.ids:
@@ -178,6 +177,7 @@ def main():
             line = f"    mean max-Tanimoto(test→train) = {np.mean(max_sims):.3f}"
             print(line); log.append(line)
 
+    # Stats Log
     with open(OUTROOT / "split_stats.log", "w") as fh:
         fh.write("\n".join(log))
     print("\nAll folds written. QC in split_stats.log")

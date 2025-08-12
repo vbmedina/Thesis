@@ -10,7 +10,7 @@ from rdkit.Chem import AllChem
 
 # ---- paths / splits ----
 BASE = Path("/Users/victoriamedina/Thesis_Project/thesis/p2_models/data/splits")
-SPLITS = ["random", "scaffold", "butina", "umap"] 
+SPLITS = ["random", "scaffold", "butina", "umap (k clustering)", "umap (HDBSCAN)"] 
 
 # ---- RDKit helpers ----
 def morgan_fp(smi, r=2, nBits=2048):
