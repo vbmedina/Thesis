@@ -1,4 +1,3 @@
-# make_violin_max_tanimoto.py
 from pathlib import Path
 import re
 import pandas as pd
@@ -8,11 +7,11 @@ import seaborn as sns
 from rdkit import Chem, DataStructs
 from rdkit.Chem import AllChem
 
-# ---- paths / splits ----
+# Paths
 BASE = Path("/Users/victoriamedina/Thesis_Project/thesis/p2_models/data/splits")
-SPLITS = ["random", "scaffold", "butina", "umap (k clustering)", "umap (HDBSCAN)"] 
+SPLITS = ["random", "scaffold", "butina", "umap", "umap_hdb"] 
 
-# ---- RDKit helpers ----
+# RDKit helpers 
 def morgan_fp(smi, r=2, nBits=2048):
     m = Chem.MolFromSmiles(smi)
     return AllChem.GetMorganFingerprintAsBitVect(m, r, nBits)
@@ -50,16 +49,18 @@ def collect_split_max_sims(split: str):
         results.extend(max_sims_for_fold(train_csv, test_csv))
     return results
 
-# ---- collect all max(test->train) sims ----
+# Max similatries
 rows = []
 for split in SPLITS:
     vals = collect_split_max_sims(split)
     rows += [{"split": split, "max_sim": v} for v in vals]
 
 sim_df = pd.DataFrame(rows)
-print(sim_df.groupby("split")["max_sim"].mean().round(3))  # quick sanity check
 
-# ---- violin + box plot (all reds) ----
+# Sanity check
+print(sim_df.groupby("split")["max_sim"].mean().round(3))
+
+# Violin + box plot (all reds) 
 order = [s for s in SPLITS if s in sim_df["split"].unique()]
 reds = sns.color_palette("Reds", n_colors=len(order))
 palette = dict(zip(order, reds))
@@ -69,7 +70,7 @@ ax = sns.violinplot(
     data=sim_df, x="split", y="max_sim",
     order=order, palette=palette, cut=0, inner=None
 )
-# overlay a box to mimic the paper's quartile box
+# Overlay a box to mimic the paper's quartile box
 sns.boxplot(
     data=sim_df, x="split", y="max_sim",
     order=order, width=0.22, showcaps=True, showfliers=False,
@@ -81,7 +82,7 @@ sns.boxplot(
 ax.set_title("Train-Test Tanimoto Similarity")
 ax.set_xlabel("Splitting Method")
 ax.set_ylabel("Max Tanimoto Similarity to Training Set")
-ax.set_ylim(0, 1)                    # Tanimoto is in [0,1]
+ax.set_ylim(0, 1)
 plt.tight_layout()
 
 out_png = BASE / "max_tanimoto_by_split.png"
