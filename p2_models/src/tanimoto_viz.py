@@ -30,7 +30,6 @@ def collect_split_max_sims(split: str):
     folder = BASE / split
     if not folder.exists():
         return []
-    # find all train files; extract fold number; pair with the matching test file
     train_files = sorted(folder.glob(f"{split}_fold_*_train.csv"))
     results = []
     for train_csv in train_files:
@@ -38,7 +37,6 @@ def collect_split_max_sims(split: str):
         if not m: 
             continue
         fnum = m.group(1)
-        # try both test filename patterns
         candidates = [
             folder / f"{split}_fold{fnum}_test.csv",
             folder / f"{split}_fold_{fnum}_test.csv",
