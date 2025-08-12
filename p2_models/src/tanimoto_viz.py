@@ -1,115 +1,90 @@
-import os, sys, math, glob, argparse
+# make_violin_max_tanimoto.py
+from pathlib import Path
+import re
 import pandas as pd
-from rdkit import Chem, RDLogger
-from rdkit.Chem import AllChem, DataStructs
+import numpy as np
 import matplotlib.pyplot as plt
+import seaborn as sns
+from rdkit import Chem, DataStructs
+from rdkit.Chem import AllChem
 
-RDLogger.DisableLog("rdApp.*")
+# ---- paths / splits ----
+BASE = Path("/Users/victoriamedina/Thesis_Project/thesis/p2_models/data/splits")
+SPLITS = ["random", "scaffold", "butina", "umap"] 
 
+# ---- RDKit helpers ----
+def morgan_fp(smi, r=2, nBits=2048):
+    m = Chem.MolFromSmiles(smi)
+    return AllChem.GetMorganFingerprintAsBitVect(m, r, nBits)
 
-def find_file(dir_path, method, fold, split):
-    # tolerant to both "_fold_1_train.csv" and "_fold1_test.csv"
-    pat = os.path.join(dir_path, f"{method}_fold*{fold}*_{split}.csv")
-    m = sorted(glob.glob(pat))
-    if not m:
-        raise FileNotFoundError(f"Missing file for {method} fold {fold} {split}: {pat}")
-    return m[0]
-
-def detect_smiles_col(df, user_col):
-    if user_col and user_col != "auto":
-        if user_col not in df.columns:
-            raise ValueError(f"SMILES column '{user_col}' not found in {list(df.columns)}")
-        return user_col
-    for c in ("smiles","SMILES","canonical_smiles","Canonical_SMILES"):
-        if c in df.columns: return c
-    raise ValueError("Could not detect a SMILES column; pass --smiles_col")
-
-def load_smiles(csv_path, smiles_col):
-    df = pd.read_csv(csv_path)
-    col = detect_smiles_col(df, smiles_col)
-    return df[col].astype(str).tolist()
-
-def to_mols(smiles):
-    mols, bad = [], 0
-    for s in smiles:
-        m = Chem.MolFromSmiles(s)
-        mols.append(m)
-        if m is None: bad += 1
-    if bad:
-        print(f"[warn] {bad} invalid SMILES skipped in {len(smiles)} rows", file=sys.stderr)
-    return mols
-
-def to_fps(mols, n_bits=2048, radius=2):
-    return [None if m is None else AllChem.GetMorganFingerprintAsBitVect(m, radius, nBits=n_bits) for m in mols]
-
-def max_to_train(query_fps, train_fps, exclude_self=False):
-    keep_train = [t for t in train_fps if t is not None]
+def max_sims_for_fold(train_csv: Path, test_csv: Path):
+    tr = pd.read_csv(train_csv, usecols=["Smiles"])
+    te = pd.read_csv(test_csv,  usecols=["Smiles"])
+    tr_fps = [morgan_fp(s) for s in tr["Smiles"]]
     out = []
-    for i, fp in enumerate(query_fps):
-        if fp is None:
-            out.append(float("nan")); continue
-        if not exclude_self:
-            sims = DataStructs.BulkTanimotoSimilarity(fp, keep_train)
-            out.append(max(sims) if sims else float("nan"))
-        else:
-            sims = DataStructs.BulkTanimotoSimilarity(fp, train_fps)
-            if i < len(sims) and sims[i] == 1.0:
-                sims[i] = 0.0
-            out.append(max(sims))
+    for smi in te["Smiles"]:
+        sims = DataStructs.BulkTanimotoSimilarity(morgan_fp(smi), tr_fps)
+        out.append(max(sims))
     return out
 
-def violin(stats, out_png):
-    labels = list(stats.keys())
-    data = [[v for v in stats[k] if pd.notna(v)] for k in labels]
-    fig = plt.figure(figsize=(6,4.5), dpi=150)
-    plt.violinplot(data, showmeans=True)
-    plt.xticks(range(1, len(labels)+1), labels)
-    plt.ylabel("Max Tanimoto to training set")
-    plt.ylim(0,1.0)
-    plt.tight_layout()
-    os.makedirs(os.path.dirname(out_png), exist_ok=True)
-    fig.savefig(out_png); plt.close(fig)
-    print(f"[plot] {out_png}")
+def collect_split_max_sims(split: str):
+    folder = BASE / split
+    if not folder.exists():
+        return []
+    # find all train files; extract fold number; pair with the matching test file
+    train_files = sorted(folder.glob(f"{split}_fold_*_train.csv"))
+    results = []
+    for train_csv in train_files:
+        m = re.search(r"fold[_]?(\d+)_train\.csv", train_csv.name)
+        if not m: 
+            continue
+        fnum = m.group(1)
+        # try both test filename patterns
+        candidates = [
+            folder / f"{split}_fold{fnum}_test.csv",
+            folder / f"{split}_fold_{fnum}_test.csv",
+        ]
+        test_csv = next((p for p in candidates if p.exists()), None)
+        if test_csv is None:
+            continue
+        results.extend(max_sims_for_fold(train_csv, test_csv))
+    return results
 
-def run(base_dir, smiles_col, methods):
-    all_rows = []
-    for method in methods:
-        mdir = os.path.join(base_dir, method)
-        for fold in range(1, 6):
-            train_csv = find_file(mdir, method, fold, "train")
-            val_csv   = find_file(mdir, method, fold, "val")
-            test_csv  = find_file(mdir, method, fold, "test")
+# ---- collect all max(test->train) sims ----
+rows = []
+for split in SPLITS:
+    vals = collect_split_max_sims(split)
+    rows += [{"split": split, "max_sim": v} for v in vals]
 
-            tr_fps = to_fps(to_mols(load_smiles(train_csv, smiles_col)))
-            va_fps = to_fps(to_mols(load_smiles(val_csv,   smiles_col)))
-            te_fps = to_fps(to_mols(load_smiles(test_csv,  smiles_col)))
+sim_df = pd.DataFrame(rows)
+print(sim_df.groupby("split")["max_sim"].mean().round(3))  # quick sanity check
 
-            tr_max = max_to_train(tr_fps, tr_fps, exclude_self=True)
-            va_max = max_to_train(va_fps, tr_fps, exclude_self=False)
-            te_max = max_to_train(te_fps, tr_fps, exclude_self=False)
+# ---- violin + box plot (all reds) ----
+order = [s for s in SPLITS if s in sim_df["split"].unique()]
+reds = sns.color_palette("Reds", n_colors=len(order))
+palette = dict(zip(order, reds))
 
-            # per-fold CSV
-            out_csv_dir = os.path.join("reports","tanimoto",method)
-            os.makedirs(out_csv_dir, exist_ok=True)
-            pd.DataFrame({
-                "split": ["train"]*len(tr_max) + ["val"]*len(va_max) + ["test"]*len(te_max),
-                "max_sim": tr_max + va_max + te_max
-            }).to_csv(os.path.join(out_csv_dir, f"{method}_fold{fold}_max_tanimoto.csv"), index=False)
+plt.figure(figsize=(9, 4.5))
+ax = sns.violinplot(
+    data=sim_df, x="split", y="max_sim",
+    order=order, palette=palette, cut=0, inner=None
+)
+# overlay a box to mimic the paper's quartile box
+sns.boxplot(
+    data=sim_df, x="split", y="max_sim",
+    order=order, width=0.22, showcaps=True, showfliers=False,
+    boxprops={"facecolor": "#f6c7c7", "edgecolor": "#7f1d1d"},
+    whiskerprops={"color": "#7f1d1d"}, medianprops={"color": "#7f1d1d"},
+    ax=ax
+)
 
-            # per-fold plot
-            violin({"train":tr_max, "val":va_max, "test":te_max},
-                   os.path.join("figures","tanimoto",method, f"{method}_fold{fold}_violin.png"))
+ax.set_title("Train-Test Tanimoto Similarity")
+ax.set_xlabel("Splitting Method")
+ax.set_ylabel("Max Tanimoto Similarity to Training Set")
+ax.set_ylim(0, 1)                    # Tanimoto is in [0,1]
+plt.tight_layout()
 
-            # summary rows
-            for s, arr in (("train", tr_max), ("val", va_max), ("test", te_max)):
-                all_rows += [{"method":method, "fold":fold, "split":s, "max_sim":v} for v in arr]
-
-    pd.DataFrame(all_rows).to_csv(os.path.join("reports","tanimoto","_summary_all_folds.csv"), index=False)
-
-if __name__ == "__main__":
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--base_dir", required=True, help="Folder containing butina/random/random_sim/scaffold/umap")
-    ap.add_argument("--smiles_col", default="auto", help="SMILES column name (or 'auto')")
-    ap.add_argument("--methods", nargs="*", default=["butina","random","random_sim","scaffold","umap"])
-    args = ap.parse_args()
-    run(args.base_dir, args.smiles_col, args.methods)
+out_png = BASE / "max_tanimoto_by_split.png"
+plt.savefig(out_png, dpi=300)
+print("Saved:", out_png)
+plt.show()

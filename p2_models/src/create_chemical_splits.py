@@ -1,62 +1,48 @@
-#  Run after   conda activate molml
-# Random, Random-Sim (fingerprint diversity), Scaffold, Butina, UMAP-HDBSCAN
+# conda activate molml
 
-# Imports
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
-import umap, hdbscan
-import pathlib
+from pathlib import Path
 import deepchem as dc
 from rdkit import Chem, DataStructs, RDLogger
-from rdkit.Chem import AllChem, Scaffolds
-from rdkit.ML.Cluster import Butina
+from rdkit.Chem import AllChem
 from sklearn.model_selection import train_test_split
+from sklearn.cluster import AgglomerativeClustering
+import umap
+import hdbscan
+
 RDLogger.DisableLog("rdApp.warning")
 
-# Set random seed
+# -------------------- config --------------------
 SEED = 0
 np.random.seed(SEED)
 INPUTFILE = "/Users/victoriamedina/Thesis_Project/thesis/p2_models/data/tidy/pp_tidy.csv"
+OUTROOT  = Path("/Users/victoriamedina/Thesis_Project/thesis/p2_models/data/splits")
+K = 5
+ACTIVE_THRESHOLD = 6.0
 
-# Generate Morgan fingerprints
-def morgan_fp(smiles, r=2, nBits=1024):
-    m = Chem.MolFromSmiles(smiles)
+# -------------------- chem utils --------------------
+def morgan_fp(smi, r=2, nBits=1024):
+    m = Chem.MolFromSmiles(smi)
     return AllChem.GetMorganFingerprintAsBitVect(m, r, nBits)
 
-# Tanimoto similarity matrix for fingerprints
-def tanimoto_matrix(fps):
-    n = len(fps)
-    mat = np.empty((n, n), dtype=np.float32)
-    for i, fp in enumerate(fps):
-        sims = DataStructs.BulkTanimotoSimilarity(fp, fps[:i+1])
-        mat[i, :i+1] = sims
-        mat[:i+1, i] = sims
-    return mat
+def fp_to_numpy(fp, nBits=1024):
+    arr = np.zeros((nBits,), dtype=np.int8)
+    DataStructs.ConvertToNumpyArray(fp, arr)
+    return arr
 
-# Quality control printout
-def qc_print(split_name, fold, y_train, y_val, y_test, active_threshold, log):
-    total_active = (y_test >= active_threshold).sum()
-    line  = (f"[{split_name} | fold {fold}] "
-             f"train {len(y_train):6,} | val {len(y_val):6,} | test {len(y_test):6,} "
-             f"| actives≥{active_threshold} in test: {total_active:5,}")
+# -------------------- logging --------------------
+def qc_print(split_name, fold, y_train, y_test, active_threshold, log):
+    n_active_test = (y_test >= active_threshold).sum()
+    line = (f"[{split_name} | fold {fold}] "
+            f"train {len(y_train):6,} | test {len(y_test):6,} "
+            f"| actives≥{active_threshold} in test: {n_active_test:5,}")
     print(line); log.append(line)
 
-# Generate violin plots
-def save_violin(df, label_col, value_col, title, out_png):
-    plt.figure(figsize=(6,4))
-    sns.violinplot(data=df, x=label_col, y=value_col, cut=0, inner="quartile")
-    plt.title(title); plt.tight_layout(); plt.savefig(out_png, dpi=300); plt.close()
-
-# Split blocks
+# -------------------- baseline k-fold splits --------------------
 def split_random(ds, k, seed):
+    # DeepChem returns [(train, test)], we treat test as test
     return dc.splits.RandomSplitter().k_fold_split(ds, k=k, seed=seed)
-
-def split_random_sim(ds, k, seed):
-    """FingerprintSplitter → 5 folds."""
-    splitter = dc.splits.FingerprintSplitter()
-    return splitter.k_fold_split(ds, k=k)          # deterministic; seed ignored
 
 def split_scaffold(ds, k, seed):
     return dc.splits.ScaffoldSplitter().k_fold_split(ds, k=k, seed=seed)
@@ -64,175 +50,137 @@ def split_scaffold(ds, k, seed):
 def split_butina(ds, k, seed, cutoff=0.6):
     return dc.splits.ButinaSplitter(cutoff).k_fold_split(ds, k=k, seed=seed)
 
-def split_umap_hdb(ds, k, seed):
-    # Smiles and Morgan fingerprints for Data Disk
+# -------------------- UMAP -> Agglomerative (fixed-k) --------------------
+def split_umap_k(ds, k, seed):
     smiles = ds.ids
-    fps    = [morgan_fp(s) for s in smiles]
+    fps = [morgan_fp(s) for s in smiles]
+    arr = np.stack([fp_to_numpy(fp) for fp in fps]).astype(bool)
 
-    # Set array for UMAP
-    arr = np.asarray([
-        np.frombuffer(fp.ToBitString().encode("utf-8"), "S1").view("i1")
-        for fp in fps]) 
-    
-    # UMAP embedding
     emb = umap.UMAP(
         n_components=2,
-        init="random",
+        n_neighbors=25,
+        min_dist=0.1,
+        metric="jaccard",
         random_state=seed
     ).fit_transform(arr)
 
-    # HDBSCAN clustering 
-    labels = hdbscan.HDBSCAN(min_cluster_size=25).fit(emb).labels_
+    labels = AgglomerativeClustering(n_clusters=k, linkage="ward").fit_predict(emb)
 
+    folds = []
+    n_all = len(ds)
+    for f in range(k):
+        test_idx   = np.where(labels == f)[0]
+        train_idx = np.setdiff1d(np.arange(n_all), test_idx)
+        train_ds  = ds.select(train_idx)
+        test_ds    = ds.select(test_idx)
+        folds.append((train_ds, test_ds))
+    return folds
+
+# -------------------- UMAP -> HDBSCAN (cluster-balanced k folds) --------------------
+def split_umap_hdb(ds, k, seed):
+    smiles = ds.ids
+    fps = [morgan_fp(s) for s in smiles]
+    arr = np.stack([fp_to_numpy(fp) for fp in fps]).astype(bool)
+
+    emb = umap.UMAP(
+        n_components=2,
+        n_neighbors=25,
+        min_dist=0.1,
+        metric="jaccard",
+        random_state=seed
+    ).fit_transform(arr)
+
+    labels = hdbscan.HDBSCAN(min_cluster_size=25, min_samples=10).fit(emb).labels_
+
+    # group indices by cluster
     clusters = {}
-    for idx, lab in enumerate(labels):
-        clusters.setdefault(lab, []).append(idx)
+    for i, c in enumerate(labels):
+        clusters.setdefault(c, []).append(i)
 
-    # Treat noise pointss as singles
+    # treat noise (-1) as singletons
     if -1 in clusters:
-        for idx in clusters[-1]:
-            clusters[idx] = [idx]
+        for i in clusters[-1]:
+            clusters[i] = [i]
         del clusters[-1]
 
-    #Round-robin cluster assignment
+    # round-robin assign clusters to k folds for balance
     fold_bins = [[] for _ in range(k)]
-    for lab in sorted(clusters, key=lambda c: len(clusters[c]), reverse=True):
-        target = min(range(k), key=lambda f: len(fold_bins[f]))
-        fold_bins[target].extend(clusters[lab])
+    for c in sorted(clusters, key=lambda x: len(clusters[x]), reverse=True):
+        tgt = min(range(k), key=lambda f: len(fold_bins[f]))
+        fold_bins[tgt].extend(clusters[c])
 
-    # Build (train, validation, test) datasets
-    fold_datasets = []
+    folds = []
     n_all = len(ds)
-
     for f in range(k):
-        test_idx  = np.array(fold_bins[f])
-        other_idx = np.setdiff1d(np.arange(n_all), test_idx)
+        test_idx   = np.array(fold_bins[f], dtype=int)
+        train_idx = np.setdiff1d(np.arange(n_all), test_idx)
+        train_ds  = ds.select(train_idx)
+        test_ds    = ds.select(test_idx)
+        folds.append((train_ds, test_ds))
+    return folds
 
-        # 10 % of 'other' for validation
-        val_idx, train_idx = train_test_split(
-            other_idx,
-            test_size=0.90,
-            random_state=seed + f,
-            shuffle=True
-        )
-
-        train_ds = ds.select(train_idx)
-        val_ds   = ds.select(val_idx)
-        test_ds  = ds.select(test_idx)
-
-        fold_datasets.append((train_ds, val_ds, test_ds))
-
-    return fold_datasets
-
-def ensure_val(train_ds, test_ds, val_frac=0.10, seed=0):
-
-    # Case where custom splitter already returned (train, val, test)
-    if isinstance(train_ds, tuple) and len(train_ds) == 3:
-        return train_ds  
-
-    n = len(train_ds)
-    idx = np.arange(n)
-
-    # stratify optionally on y if you like; here we ignore stratification
-    train_idx, val_idx = train_test_split(
-        idx,
-        test_size=val_frac,
-        random_state=seed,
-        shuffle=True
-    )
-
-    # DeepChem .select() returns (new_dataset, selected_data_indices)
-    new_train_ds = train_ds.select(train_idx)
-    val_ds       = train_ds.select(val_idx)
-
-    return new_train_ds, val_ds, test_ds
-
-# Map names
+# -------------------- registry --------------------
 SPLITS = {
-    "random"     : split_random,
-    "random_sim" : split_random_sim,
-    "scaffold"   : split_scaffold,
-    "butina"     : split_butina,
-    "umap"       : split_umap_hdb,
+    "random"   : split_random,
+    "scaffold" : split_scaffold,
+    "butina"   : split_butina,
+    "umap"     : split_umap_k,     # UMAP (fixed-k)
+    "umap_hdb" : split_umap_hdb,   # UMAP + HDBSCAN
 }
 
-# Split object
+# -------------------- main --------------------
 def main():
-    out_root = pathlib.Path("/Users/victoriamedina/Thesis_Project/thesis/p2_models/data/splits") 
+    OUTROOT.mkdir(parents=True, exist_ok=True)
     log = []
 
     df = pd.read_csv(INPUTFILE)
-    if {"Smiles","pIC50"}.issubset(df.columns) is False:
+    if not {"Smiles", "pIC50"}.issubset(df.columns):
         raise ValueError("CSV must contain Smiles and pIC50 columns.")
-    active_threshold = 6.0
 
-    # Vuild DeepChem dataset
-    y_arr = df["pIC50"].values.reshape(-1,1)
+    # build DeepChem dataset
+    y_arr = df["pIC50"].values.reshape(-1, 1)
     ds = dc.data.DiskDataset.from_numpy(
-            X = np.zeros((len(df),1)),
-            y = y_arr,
-            ids = df["Smiles"].values)
+        X=np.zeros((len(df), 1)),
+        y=y_arr,
+        ids=df["Smiles"].values
+    )
 
-    # Fingerprint cache for similarity stats
+    # for similarity stats
     fps = [morgan_fp(s) for s in df["Smiles"]]
-
     id2row = dict(zip(df["Smiles"], df.index))
+
     def ds_to_df(dset):
         rows = [id2row[smi] for smi in dset.ids]
         return df.loc[rows]
 
-    for split_name, fn in SPLITS.items():
-        print(f"\n=== {split_name.upper()} split ===")
-        split_dir = out_root / split_name; split_dir.mkdir(exist_ok=True)
-        folds = fn(ds, k=5, seed=SEED)
+    for split_name, splitter in SPLITS.items():
+        print(f"\n=== {split_name.upper()} (k={K}) ===")
+        split_dir = OUTROOT / split_name
+        split_dir.mkdir(exist_ok=True)
 
-        for f, fold_tuple in enumerate(folds):
-            # Make sure we end up with (train_ds, val_ds, test_ds)
-            if len(fold_tuple) == 2:
-                train_ds, test_ds = fold_tuple
-                train_ds, val_ds, test_ds = ensure_val(train_ds, test_ds, seed=SEED+f)
-            else:
-                train_ds, val_ds, test_ds = fold_tuple
+        folds = splitter(ds, k=K, seed=SEED)
 
-            foldnum = f+1
+        for f, (train_ds, test_ds) in enumerate(folds, start=1):
+            tr, vl = ds_to_df(train_ds), ds_to_df(test_ds)
 
-            tr = ds_to_df(train_ds)
-            vl = ds_to_df(val_ds)
-            te = ds_to_df(test_ds)
+            # save only train/test
+            tr.to_csv(split_dir / f"{split_name}_fold_{f}_train.csv", index=False)
+            vl.to_csv(split_dir / f"{split_name}_fold_{f}_test.csv",   index=False)
 
-            # Save CSVs
-            tr.to_csv(split_dir / f"{split_name}_fold_{foldnum}_train.csv", index=False)
-            vl.to_csv(split_dir / f"{split_name}_fold{foldnum}_val.csv"  , index=False)
-            te.to_csv(split_dir / f"{split_name}_fold{foldnum}_test.csv" , index=False)
+            qc_print(split_name, f, tr["pIC50"], vl["pIC50"], ACTIVE_THRESHOLD, log)
 
-            # QC print
-            qc_print(split_name, f+1, tr["pIC50"], vl["pIC50"], te["pIC50"],
-                     active_threshold, log)
-            
-            # Violin plots
-            plot_df = pd.concat([tr.assign(split="train"),
-                                 vl.assign(split="val"),
-                                 te.assign(split="test")])
-            save_violin(plot_df, "split", "pIC50",
-                        f"{split_name} fold {foldnum}", split_dir / f"{split_name}_fold{foldnum}_violin.png")
-            # Tanimoto stats
-            if split_name in {"random_sim","butina","umap"}:
-                tr_fps = [fps[id2row[smi]] for smi in train_ds.ids]
+            # mean max-Tanimoto(test-train)
+            tr_fps = [fps[id2row[smi]] for smi in train_ds.ids]
+            max_sims = []
+            for smi in test_ds.ids:
+                sims = DataStructs.BulkTanimotoSimilarity(fps[id2row[smi]], tr_fps)
+                max_sims.append(max(sims))
+            line = f"    mean max-Tanimoto(test→train) = {np.mean(max_sims):.3f}"
+            print(line); log.append(line)
 
-                mean_sim = []
-                for smi in test_ds.ids:
-                    sims = DataStructs.BulkTanimotoSimilarity(
-                        fps[id2row[smi]], tr_fps
-                    )
-                    mean_sim.append(max(sims))
-
-                line = f"    mean max-Tanimoto(test→train) = {np.mean(mean_sim):.3f}"
-                print(line); log.append(line)
-
-    # Summary log
-    with open(out_root / "split_stats.log","w") as f:
-        f.write("\n".join(log))
-    print("\nAll splits finished. QC in split_stats.log")
+    with open(OUTROOT / "split_stats.log", "w") as fh:
+        fh.write("\n".join(log))
+    print("\nAll folds written. QC in split_stats.log")
 
 if __name__ == "__main__":
     main()
