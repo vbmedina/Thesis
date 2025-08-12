@@ -1,87 +1,162 @@
+# Activate molml env
 from pathlib import Path
-from lightning import pytorch as pl
-from lightning.pytorch.callbacks import ModelCheckpoint
 import pandas as pd
+import numpy as np
+import torch
+import matplotlib.pyplot as plt
+from lightning import pytorch as pl
+from lightning.pytorch.callbacks import ModelCheckpoint, EarlyStopping
+from lightning.pytorch.loggers import TensorBoardLogger
 from chemprop import data, featurizers, models, nn
 
-OUTPUTDIR = "/rds/general/user/vbm24/home/Thesis/p2_models/models/checkpoints"
-
+# Configeration
+SPLIT = "umap"  # or: "random", "scaffold", "butina", "umap_hdb"
 p2models_dir = Path.cwd().parent
-train_path = p2models_dir / "data" / "splits" / "umap" / "umap_fold_1_train.csv"
-val_path = p2models_dir / "data" / "splits" / "umap" / "umap_fold1_val.csv"
-test_path = p2models_dir / "data" / "splits" / "umap" / "umap_fold1_test.csv"
-num_workers = 0 # number of workers for dataloader.
-smiles_column = 'Smiles' # name of the column containing SMILES strings
-target_columns = ['pIC50'] # list of names of the columns containing targets
+SPLIT_DIR = p2models_dir / "data" / "splits" / SPLIT
+OUTPUTDIR = p2models_dir / "models" / "checkpoints" / SPLIT
+OUTPUTDIR.mkdir(parents=True, exist_ok=True)
 
+# External test file
+EXTERNAL_TEST_CSV = p2models_dir / "data" / "splits" / "sexual_test.csv"
 
-df_train = pd.read_csv(train_path)
-df_val = pd.read_csv(val_path)
-df_test = pd.read_csv(test_path)
+SMILES_COL = "Smiles"
+TARGET_COLS = ["pIC50"]
+NUM_WORKERS = 0
+MAX_EPOCHS = 200
+PATIENCE = 15
+use_gpu = torch.cuda.is_available()
 
+# File paths
+def find_file(split_dir: Path, split: str, i: int, kind: str) -> Path:
+    for name in (f"{split}_fold_{i}_{kind}.csv", f"{split}_fold{i}_{kind}.csv"):
+        p = split_dir / name
+        if p.exists():
+            return p
+    raise FileNotFoundError(f"Could not find {kind} file for fold {i} in {split_dir}")
 
-smis_train = df_train.loc[:, smiles_column].values
-ys_train = df_train.loc[:, target_columns].values
+# Load the external test dataframe
+df_ext_master = pd.read_csv(EXTERNAL_TEST_CSV)
 
-smis_val = df_val.loc[:, smiles_column].values
-ys_val = df_val.loc[:, target_columns].values
+# For table at the end
+rows = []
 
-smis_test = df_test.loc[:, smiles_column].values
-ys_test = df_test.loc[:, target_columns].values
+# Print statements for splits
+for i in range(1, 6):
+    print(f"\n===== Fold {i} ({SPLIT}) =====")
 
+    train_path = find_file(SPLIT_DIR, SPLIT, i, "train")
+    val_path   = find_file(SPLIT_DIR, SPLIT, i, "val")
+    test_path  = find_file(SPLIT_DIR, SPLIT, i, "test")
 
-train_data = [data.MoleculeDatapoint.from_smi(smi, y) for smi, y in zip(smis_train, ys_train)]
-val_data = [data.MoleculeDatapoint.from_smi(smi, y) for smi, y in zip(smis_val, ys_val)]
-test_data = [data.MoleculeDatapoint.from_smi(smi, y) for smi, y in zip(smis_test, ys_test)]
+    df_train = pd.read_csv(train_path)
+    df_val   = pd.read_csv(val_path)
+    df_test  = pd.read_csv(test_path)
 
-featurizer = featurizers.SimpleMoleculeMolGraphFeaturizer()
+    featurizer = featurizers.SimpleMoleculeMolGraphFeaturizer()
 
-train_dset = data.MoleculeDataset(train_data, featurizer)
-scaler = train_dset.normalize_targets()
+    def to_points(df):
+        return [data.MoleculeDatapoint.from_smi(s, y)
+                for s, y in zip(df[SMILES_COL].values, df[TARGET_COLS].values)]
 
-val_dset = data.MoleculeDataset(val_data, featurizer)
-val_dset.normalize_targets(scaler)
+    # Train, validatio and test sets
+    train_set = data.MoleculeDataset(to_points(df_train), featurizer)
+    scaler = train_set.normalize_targets()
 
-test_dset = data.MoleculeDataset(test_data, featurizer)
+    val_set  = data.MoleculeDataset(to_points(df_val), featurizer)
+    val_set.normalize_targets(scaler)
 
-train_loader = data.build_dataloader(train_dset, num_workers=num_workers)
-val_loader = data.build_dataloader(val_dset, num_workers=num_workers, shuffle=False)
-test_loader = data.build_dataloader(test_dset, num_workers=num_workers, shuffle=False)
+    test_set = data.MoleculeDataset(to_points(df_test), featurizer)
+    test_set.normalize_targets(scaler)
 
-mp = nn.BondMessagePassing()
+    # Sexual test set
+    ext_set = data.MoleculeDataset(to_points(df_ext_master), featurizer)
+    ext_set.normalize_targets(scaler)
 
-# Type of aggregation
-agg = nn.MeanAggregation()
+    train_loader = data.build_dataloader(train_set, num_workers=NUM_WORKERS)
+    val_loader   = data.build_dataloader(val_set,   num_workers=NUM_WORKERS, shuffle=False)
+    test_loader  = data.build_dataloader(test_set,  num_workers=NUM_WORKERS, shuffle=False)
+    ext_loader   = data.build_dataloader(ext_set,   num_workers=NUM_WORKERS, shuffle=False)
 
-output_transform = nn.UnscaleTransform.from_standard_scaler(scaler)
+    # Model
+    mp = nn.BondMessagePassing()
+    agg = nn.MeanAggregation()  # try SumAggregation()/NormAggregation() if you want to compare
+    out_tf = nn.UnscaleTransform.from_standard_scaler(scaler)
+    ffn = nn.RegressionFFN(output_transform=out_tf)
+    metric_list = [nn.metrics.RMSE(), nn.metrics.MSE(), nn.metrics.MAE()]  # monitors val_rmse
+    model = models.MPNN(mp, agg, ffn, batch_norm=True, metric_list=metric_list)
 
-ffn = nn.RegressionFFN(output_transform=output_transform)
+    # Logging and callbacks
+    fold_out = OUTPUTDIR / f"fold_{i}"
+    fold_out.mkdir(parents=True, exist_ok=True)
+    logger = TensorBoardLogger(save_dir=OUTPUTDIR, name=f"fold_{i}")
 
-batch_norm = True
+    ckpt = ModelCheckpoint(
+        dirpath=fold_out,
+        filename="best-{epoch}-{val_rmse:.4f}",
+        monitor="val_rmse", mode="min", save_top_k=1, save_last=True,
+    )
+    es = EarlyStopping(monitor="val_rmse", mode="min", patience=PATIENCE)
 
+    trainer = pl.Trainer(
+        accelerator="gpu" if use_gpu else "auto",
+        devices=1,
+        precision="16-mixed" if use_gpu else "32-true",
+        max_epochs=MAX_EPOCHS,
+        callbacks=[ckpt, es],
+        logger=logger,
+        enable_checkpointing=True,
+        enable_progress_bar=True,
+    )
 
-metric_list = [nn.metrics.RMSE(), nn.metrics.MSE(), nn.metrics.MAE()] # Only the first metric is used for training and early stopping
+    # Train
+    trainer.fit(model, train_dataloaders=train_loader, val_dataloaders=val_loader)
+    print("Best checkpoint:", ckpt.best_model_path)
 
-mpnn = models.MPNN(mp, agg, ffn, batch_norm, metric_list)
+    # Evaluate on fold test
+    test_metrics = trainer.test(dataloaders=test_loader, ckpt_path="best")[0]
+    print("Fold test metrics:", test_metrics)
 
-checkpointing = ModelCheckpoint(
-    OUTPUTDIR,  # Directory where model checkpoints will be saved
-    "best-{epoch}-{val_loss:.2f}",  # Filename format for checkpoints, including epoch and validation loss
-    "val_loss",  # Metric used to select the best checkpoint (based on validation loss)
-    mode="min",  # Save the checkpoint with the lowest validation loss (minimization objective)
-    save_last=True,  # Always save the most recent checkpoint, even if it's not the best
-)
+    # Evaluate on external test
+    ext_metrics = trainer.test(dataloaders=ext_loader, ckpt_path="best")[0]
+    print("External test metrics:", ext_metrics)
 
-trainer = pl.Trainer(
-    logger=True,
-    enable_checkpointing=True, # Use `True` if you want to save model checkpoints. The checkpoints will be saved in the `checkpoints` folder.
-    enable_progress_bar=True,
-    accelerator="auto",
-    devices=1,
-    max_epochs=20, # number of epochs to train for
-    callbacks=[checkpointing], # Use the configured checkpoint callback
-)
+    # Visuals: predicted vs true for both test sets
+    def save_pred_plot(loader, df_true, out_png):
+        with torch.no_grad():
+            preds_batches = trainer.predict(model=model, dataloaders=loader, ckpt_path="best")
+        y_hat = np.concatenate([p.detach().cpu().numpy().ravel() for p in preds_batches])
+        y_true = df_true["pIC50"].to_numpy().ravel()
+        plt.figure(figsize=(4,4))
+        plt.scatter(y_true, y_hat, s=10, alpha=0.5)
+        lo = float(min(y_true.min(), y_hat.min())); hi = float(max(y_true.max(), y_hat.max()))
+        plt.plot([lo, hi], [lo, hi], lw=2)
+        plt.xlabel("True pIC50"); plt.ylabel("Predicted pIC50"); plt.tight_layout()
+        plt.savefig(out_png, dpi=200); plt.close()
+        # also save predictions
+        pd.DataFrame({"Smiles": df_true[SMILES_COL], "y_true": y_true, "y_pred": y_hat}).to_csv(
+            Path(out_png).with_suffix(".csv"), index=False
+        )
 
-trainer.fit(mpnn, train_loader, val_loader)
+    save_pred_plot(test_loader, df_test, fold_out / "pred_vs_true_fold_test.png")
+    save_pred_plot(ext_loader,  df_ext_master, fold_out / "pred_vs_true_sexual_data.png")
 
-results = trainer.test(dataloaders=test_loader)
+    # Keep metrics for summary table
+    def pull_rmse(d):
+        for k, v in d.items():
+            if "rmse" in k.lower():
+                return float(v)
+        return np.nan
+
+    rows.append({
+        "fold": i,
+        "fold_test_rmse": pull_rmse(test_metrics),
+        "external_rmse":  pull_rmse(ext_metrics),
+        **{f"fold_{k}": v for k, v in test_metrics.items()},
+        **{f"external_{k}": v for k, v in ext_metrics.items()},
+    })
+
+# Write summary
+summary = pd.DataFrame(rows).set_index("fold")
+summary.to_csv(OUTPUTDIR / "cv_results_with_external.csv")
+print("\nPer-fold summary:\n", summary[["fold_test_rmse","external_rmse"]])
+print("\nMeans:\n", summary[["fold_test_rmse","external_rmse"]].mean())
