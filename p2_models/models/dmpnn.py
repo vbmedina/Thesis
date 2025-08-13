@@ -143,58 +143,22 @@ for i in range(1, 6):
     print(f"External test RMSE: " +
           ", ".join([f"{k}={v:.4f}" for k, v in ext_metrics.items() if 'rmse' in k.lower()]), flush=True)
 
-    # Visuals for predicted vs true for both test sets
-    def save_pred_plot(loader, df_true, out_png, split_name: str, fold: int, dataset_label: str):
+    # Visuals: predicted vs true for both test sets
+    def save_pred_plot(loader, df_true, out_png):
         with torch.no_grad():
             preds_batches = trainer.predict(model=model, dataloaders=loader, ckpt_path="best")
-
         y_hat = np.concatenate([p.detach().cpu().numpy().ravel() for p in preds_batches])
         y_true = df_true["pIC50"].to_numpy().ravel()
-
-        # fit + summary stats
-        m, b = np.polyfit(y_true, y_hat, 1)
-        r = np.corrcoef(y_true, y_hat)[0, 1]
-        r2 = float(r * r)
-        rmse = float(np.sqrt(np.mean((y_hat - y_true) ** 2)))
-
-        lo = float(min(y_true.min(), y_hat.min()))
-        hi = float(max(y_true.max(), y_hat.max()))
-        xline = np.linspace(lo, hi, 100)
-
-        fig, ax = plt.subplots(figsize=(5, 5), dpi=170)
-
-        # RED dots (each point is a circle)
-        ax.scatter(
-            y_true, y_hat,
-            s=14, alpha=0.6, color="#d92525",
-            marker="o", linewidths=0, edgecolors="none",
-            label=f"Data (n={len(y_true):,}, RMSE={rmse:.3f})"
+        plt.figure(figsize=(4,4))
+        plt.scatter(y_true, y_hat, s=10, alpha=0.5)
+        lo = float(min(y_true.min(), y_hat.min())); hi = float(max(y_true.max(), y_hat.max()))
+        plt.plot([lo, hi], [lo, hi], lw=2)
+        plt.xlabel("True pIC50"); plt.ylabel("Predicted pIC50"); plt.tight_layout()
+        plt.savefig(out_png, dpi=200); plt.close()
+        # also save predictions
+        pd.DataFrame({"Smiles": df_true[SMILES_COL], "y_true": y_true, "y_pred": y_hat}).to_csv(
+            Path(out_png).with_suffix(".csv"), index=False
         )
-
-        # BLACK regression line
-        ax.plot(xline, m * xline + b, color="black", lw=2,
-                label=f"Fit: y = {m:.2f}x + {b:.2f}  (R²={r2:.3f})")
-
-        # GRAY y=x reference
-        ax.plot([lo, hi], [lo, hi], color="0.6", lw=1.25, ls="--", label="Ideal: y = x")
-
-        # cosmetics
-        ax.set_xlim(lo, hi)
-        ax.set_ylim(lo, hi)
-        ax.set_xlabel("True pIC50")
-        ax.set_ylabel("Predicted pIC50")
-        ax.set_title(f"True vs Predicted Values on {dataset_label}: {split_name.upper()} Fold {fold}")
-        ax.grid(True, linestyle=":", alpha=0.25)
-        ax.legend(loc="best", frameon=True, facecolor="white", framealpha=0.95)
-
-        fig.tight_layout()
-        fig.savefig(out_png, dpi=300)
-        plt.close(fig)
-
-        # Save predictions to CSV next to the plot
-        pd.DataFrame(
-            {"Smiles": df_true[SMILES_COL], "y_true": y_true, "y_pred": y_hat}
-        ).to_csv(Path(out_png).with_suffix(".csv"), index=False)
 
     save_pred_plot(test_loader, df_test, fold_out / "pred_vs_true_fold_test.png")
     save_pred_plot(ext_loader,  df_ext_master, fold_out / "pred_vs_true_sexual_data.png")
