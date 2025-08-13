@@ -10,4 +10,4 @@ conda activate /rds/general/user/vbm24/home/Thesis/.conda/dmpnn
  
 cd /rds/general/user/vbm24/home/Thesis/p2_models/models
 
-python dmpnn.py
+python dmpnn_split.py
