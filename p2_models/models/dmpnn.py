@@ -27,7 +27,7 @@ TARGET_COLS = ["pIC50"]
 
 # Settings for time and compute
 NUM_WORKERS = 0
-MAX_EPOCHS = 1
+MAX_EPOCHS = 200
 PATIENCE = 15
 use_gpu = torch.cuda.is_available()
 
