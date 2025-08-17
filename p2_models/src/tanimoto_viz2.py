@@ -1,0 +1,207 @@
+# Conda activate molml 
+# Imports
+from pathlib import Path
+import numpy as np
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
+from matplotlib import cm
+
+from rdkit import Chem, DataStructs, RDLogger
+from rdkit.Chem import rdFingerprintGenerator as FPG
+from rdkit.Chem import AllChem  # fallback path
+
+RDLogger.DisableLog("rdApp.warning")
+
+# Base directories
+PROJECT   = Path("/Users/victoriamedina/Thesis_Project/thesis/p2_models")
+DATA_ROOT = PROJECT / "data"
+
+BASE_DIRS = [DATA_ROOT / "splits"] 
+SPLITS    = ["random", "scaffold", "butina", "umap", "umap_hdb"]
+FOLDS     = [1, 2, 3, 4, 5]
+SMI_COL   = "Smiles"
+
+# Using 1024 like in "create_chemical_splits"
+RADIUS = 2
+N_BITS = 1024
+USE_CHIRALITY = False
+
+# RDKit Morgan generator
+try:
+    FP_GEN = FPG.GetMorganGenerator(
+        radius=int(RADIUS),
+        includeChirality=bool(USE_CHIRALITY),
+        fpSize=int(N_BITS)
+    )
+    def ecfp4_bits(smi: str):
+        m = Chem.MolFromSmiles(smi)
+        return FP_GEN.GetFingerprint(m)
+except Exception as e:
+    print(f"[WARN] MorganGenerator unavailable ({e}). Falling back to AllChem.GetMorganFingerprintAsBitVect.")
+    def ecfp4_bits(smi: str):
+        m = Chem.MolFromSmiles(smi)
+        return AllChem.GetMorganFingerprintAsBitVect(m, int(RADIUS), nBits=int(N_BITS))
+
+EXCLUDE_IDENTICAL = True  # drop exact SMILES matches when computing nearest train neighbor (????)
+
+# Output
+FIG_DIR = DATA_ROOT / "figures"
+OUT_PNG = FIG_DIR / "max_tanimoto_violins_box_1024.png"
+STATS_CSV = FIG_DIR / "max_tanimoto_stats_1024.csv"
+
+# Helpers - Return SMILES if invalid
+def canon(s: str) -> str | None:
+    m = Chem.MolFromSmiles(str(s))
+    return Chem.MolToSmiles(m, canonical=True) if m is not None else None
+
+# Helpers - Finding CSVs through naming scheme
+def find_csv(base_dirs, split: str, fold: int, which: str) -> Path | None:
+    for root in base_dirs:
+        d = root / split
+        if not d.exists():
+            continue
+        for pat in (f"{split}_fold_{fold}_{which}.csv",
+                    f"fold{fold}_{which}.csv",
+                    f"{split}_fold{fold}_{which}.csv"):
+            hits = list(d.glob(pat))
+            if hits:
+                return hits[0]
+    return None
+
+# Main loop
+def main():
+    rows = []
+    fp_cache: dict[str, object] = {}
+
+    # Build distributions on all splits/folds
+    for sp in SPLITS:
+        for fold in FOLDS:
+            tr_path = find_csv(BASE_DIRS, sp, fold, "train")
+            te_path = find_csv(BASE_DIRS, sp, fold, "test")
+            if tr_path is None or te_path is None:
+                print(f"[WARNING] Missing CSV for {sp} fold {fold}; skipping.")
+                continue
+
+            tr = pd.read_csv(tr_path)
+            te = pd.read_csv(te_path)
+            if SMI_COL not in tr or SMI_COL not in te:
+                raise ValueError(f"CSV missing '{SMI_COL}': {tr_path}/{te_path}")
+
+            train_smis = [canon(s) for s in tr[SMI_COL].astype(str)]
+            test_smis  = [canon(s) for s in te[SMI_COL].astype(str)]
+            train_smis = [s for s in train_smis if s is not None]
+            test_smis  = [s for s in test_smis  if s is not None]
+
+            # Cache train fps
+            train_fps = []
+            for s in train_smis:
+                if s not in fp_cache:
+                    fp_cache[s] = ecfp4_bits(s)
+                train_fps.append(fp_cache[s])
+
+            # Compute max similarity per test SMILES
+            for s in test_smis:
+                if s not in fp_cache:
+                    fp_cache[s] = ecfp4_bits(s)
+                sims = DataStructs.BulkTanimotoSimilarity(fp_cache[s], train_fps)
+                if EXCLUDE_IDENTICAL:
+                    sims = [val for val, tr_s in zip(sims, train_smis) if tr_s != s]
+                if sims:
+                    rows.append({"method": sp, "fold": fold, "max_tani": float(np.max(sims))})
+    
+    # If no values found
+    if not rows:
+        raise SystemExit("No values computed. Check BASE_DIRS and file names.")
+
+    df = pd.DataFrame(rows)
+    df["max_tani"] = df["max_tani"].clip(0, 1)
+
+        # Stats for annotation
+    stats = (df.groupby("method")["max_tani"]
+            .agg(p05=lambda x: x.quantile(0.05),
+                    median="median",
+                    p95=lambda x: x.quantile(0.95),
+                    n="count")
+            .reset_index())
+
+    # Print summary (use p05, not p5)
+    print("\nPer-split summary (p05 / median / p95 / n):")
+    print(stats[["method", "n", "p05", "median", "p95"]].to_string(
+        index=False,
+        float_format=lambda v: f"{v:.3f}" if isinstance(v, float) else str(v)
+    ))
+
+    FIG_DIR.mkdir(parents=True, exist_ok=True)
+    stats.to_csv(STATS_CSV, index=False)
+    print(f"Saved stats to {STATS_CSV}")
+
+    # Keep configured order
+    order = [m for m in SPLITS if m in df["method"].unique()]
+
+    # Reds palette
+    reds_cmap = cm.get_cmap("Reds")
+    colors = [reds_cmap(x) for x in np.linspace(0.35, 0.90, len(order))]
+    PALETTE = dict(zip(order, colors))
+
+    sns.set_style("whitegrid")
+    sns.despine()
+
+    # Create figure - figure size
+    fig, ax = plt.subplots(figsize=(10, 5))
+
+    # Create figure - violin
+    sns.violinplot(
+        data=df, x="method", y="max_tani", order=order,
+        inner=None, cut=0, bw_adjust=0.7, linewidth=1.0,
+        palette=PALETTE, ax=ax
+    )
+
+    # Create figure - box plot
+    sns.boxplot(
+        data=df, x="method", y="max_tani", order=order,
+        width=0.26, showcaps=True, showfliers=False, whis=(5, 95),
+        boxprops=dict(facecolor="white", edgecolor="black", alpha=0.85, linewidth=1.2),
+        whiskerprops=dict(color="black", linewidth=1.0),
+        capprops=dict(color="black", linewidth=1.0),
+        medianprops=dict(color="black", linewidth=1.5),
+        ax=ax
+    )
+
+    # Labels
+    ax.set_xlabel("Splitting Method")
+    ax.set_ylabel("Max Tanimoto Similarity to Training Set")
+    ax.set_ylim(0, 1.0)
+    ax.axhline(1.0, ls="--", lw=0.8, c="black", alpha=0.6)
+    ax.set_title("Train-Test Tanimoto by Split", pad=12)
+
+   # Annotate median, 95th and 5th percentile
+    x_pos = {m: i for i, m in enumerate(order)}
+    for _, r in stats.iterrows():
+        m = r["method"]
+        if m not in x_pos:
+            continue
+        x   = x_pos[m]
+        p05 = float(r["p05"])
+        med = float(r["median"])
+        p95 = float(r["p95"])
+
+        # median
+        ax.hlines(med, x-0.28, x-0.08, colors="black", linewidth=1.3)
+        ax.text(x-0.35, med, f"{med:.2f}", ha="right", va="center", fontsize=9)
+
+        # 95th quartile
+        ax.hlines(p95, x+0.08, x+0.28, colors="black", linewidth=1.3)
+        ax.text(x+0.35, p95, f"{p95:.2f}", ha="left",  va="center", fontsize=9)
+
+        # 5th quartile
+        ax.hlines(p05, x+0.08, x+0.28, colors="black", linewidth=1.3)
+        ax.text(x+0.35, p05, f"{p05:.2f}", ha="left",  va="center", fontsize=9)
+
+    # Out
+    fig.tight_layout()
+    fig.savefig(OUT_PNG, dpi=300)
+    print(f"\nSaved figure - {OUT_PNG}")
+
+if __name__ == "__main__":
+    main()
