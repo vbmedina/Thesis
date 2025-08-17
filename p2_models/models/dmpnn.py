@@ -9,24 +9,29 @@ from lightning.pytorch.callbacks import ModelCheckpoint, EarlyStopping
 from lightning.pytorch.loggers import TensorBoardLogger
 from chemprop import data, featurizers, models, nn
 
-# Configeration
+# Config
 SPLIT = "umap"  # or: "random", "scaffold", "butina", "umap_hdb"
-p2models_dir = Path.cwd().parent
+
+# Directory to splits
+p2models_dir = Path.home() / "Thesis/p2_models"
 SPLIT_DIR = p2models_dir / "data" / "splits" / SPLIT
 OUTPUTDIR = p2models_dir / "models" / "checkpoints" / SPLIT
 OUTPUTDIR.mkdir(parents=True, exist_ok=True)
 
-# External test file
+# Directory to sexual data test set
 EXTERNAL_TEST_CSV = p2models_dir / "data" / "splits" / "sexual_test.csv"
 
+# Find targets
 SMILES_COL = "Smiles"
 TARGET_COLS = ["pIC50"]
+
+# Settings for time and compute
 NUM_WORKERS = 0
 MAX_EPOCHS = 200
 PATIENCE = 15
 use_gpu = torch.cuda.is_available()
 
-# File paths
+# Path helper for csv's
 def find_file(split_dir: Path, split: str, i: int, kind: str) -> Path:
     for name in (f"{split}_fold_{i}_{kind}.csv", f"{split}_fold{i}_{kind}.csv"):
         p = split_dir / name
@@ -34,15 +39,15 @@ def find_file(split_dir: Path, split: str, i: int, kind: str) -> Path:
             return p
     raise FileNotFoundError(f"Could not find {kind} file for fold {i} in {split_dir}")
 
-# Load the external test dataframe
+# Load CSV for sexual test set
 df_ext_master = pd.read_csv(EXTERNAL_TEST_CSV)
 
-# For table at the end
+# Results storage for later
 rows = []
 
-# Print statements for splits
+# Training and validation over folds
 for i in range(1, 6):
-    print(f"\n===== Fold {i} ({SPLIT}) =====")
+    print(f"\n===== Fold {i} ({SPLIT}) =====", flush=True)
 
     train_path = find_file(SPLIT_DIR, SPLIT, i, "train")
     val_path   = find_file(SPLIT_DIR, SPLIT, i, "val")
@@ -52,13 +57,16 @@ for i in range(1, 6):
     df_val   = pd.read_csv(val_path)
     df_test  = pd.read_csv(test_path)
 
+    print(f"Loaded | train={len(df_train):,}  val={len(df_val):,}  "
+          f"test={len(df_test):,}  external={len(df_ext_master):,}", flush=True)
+
     featurizer = featurizers.SimpleMoleculeMolGraphFeaturizer()
 
     def to_points(df):
         return [data.MoleculeDatapoint.from_smi(s, y)
                 for s, y in zip(df[SMILES_COL].values, df[TARGET_COLS].values)]
 
-    # Train, validatio and test sets
+    # Datasets - train, validation, test, and sexual test sets
     train_set = data.MoleculeDataset(to_points(df_train), featurizer)
     scaler = train_set.normalize_targets()
 
@@ -68,10 +76,10 @@ for i in range(1, 6):
     test_set = data.MoleculeDataset(to_points(df_test), featurizer)
     test_set.normalize_targets(scaler)
 
-    # Sexual test set
-    ext_set = data.MoleculeDataset(to_points(df_ext_master), featurizer)
+    ext_set  = data.MoleculeDataset(to_points(df_ext_master), featurizer)
     ext_set.normalize_targets(scaler)
 
+    # Dataloaders
     train_loader = data.build_dataloader(train_set, num_workers=NUM_WORKERS)
     val_loader   = data.build_dataloader(val_set,   num_workers=NUM_WORKERS, shuffle=False)
     test_loader  = data.build_dataloader(test_set,  num_workers=NUM_WORKERS, shuffle=False)
@@ -79,24 +87,37 @@ for i in range(1, 6):
 
     # Model
     mp = nn.BondMessagePassing()
-    agg = nn.MeanAggregation()  # try SumAggregation()/NormAggregation() if you want to compare
+    agg = nn.MeanAggregation()  # change to SumAggregation/NormAggregation to compare
     out_tf = nn.UnscaleTransform.from_standard_scaler(scaler)
     ffn = nn.RegressionFFN(output_transform=out_tf)
-    metric_list = [nn.metrics.RMSE(), nn.metrics.MSE(), nn.metrics.MAE()]  # monitors val_rmse
-    model = models.MPNN(mp, agg, ffn, batch_norm=True, metric_list=metric_list)
+    metric_list = [nn.metrics.RMSE(), nn.metrics.MSE(), nn.metrics.MAE()]  # logs keys like 'val/rmse'
+    model = models.MPNN(mp, agg, ffn, batch_norm=True, metrics=metric_list)
 
-    # Logging and callbacks
+    # Per-fold output and logger
     fold_out = OUTPUTDIR / f"fold_{i}"
     fold_out.mkdir(parents=True, exist_ok=True)
-    logger = TensorBoardLogger(save_dir=OUTPUTDIR, name=f"fold_{i}")
 
+    # Try TensorBoard; if not available, fall back to CSVLogger
+    try:
+        from lightning.pytorch.loggers import TensorBoardLogger
+        logger = TensorBoardLogger(save_dir=str(OUTPUTDIR), name=f"fold_{i}")
+        print("∙ Using TensorBoard logger", flush=True)
+    except Exception:
+        from lightning.pytorch.loggers import CSVLogger
+        logger = CSVLogger(save_dir=str(OUTPUTDIR), name=f"fold_{i}")
+        print("∙ TensorBoard not available — using CSVLogger", flush=True)
+
+    # Callbacks for modelcheck point and save top result
     ckpt = ModelCheckpoint(
         dirpath=fold_out,
-        filename="best-{epoch}-{val_rmse:.4f}",
-        monitor="val_rmse", mode="min", save_top_k=1, save_last=True,
+        filename="best",
+        monitor="val/rmse",
+        mode="min",
+        save_top_k=1,
+        save_last=True,
     )
-    es = EarlyStopping(monitor="val_rmse", mode="min", patience=PATIENCE)
-
+    es = EarlyStopping(monitor="val/rmse", mode="min", patience=PATIENCE)
+#
     trainer = pl.Trainer(
         accelerator="gpu" if use_gpu else "auto",
         devices=1,
@@ -108,17 +129,19 @@ for i in range(1, 6):
         enable_progress_bar=True,
     )
 
-    # Train
+    print(f"Training (max_epochs={MAX_EPOCHS}, patience={PATIENCE})...", flush=True)
     trainer.fit(model, train_dataloaders=train_loader, val_dataloaders=val_loader)
-    print("Best checkpoint:", ckpt.best_model_path)
+    print(f"Best checkpoint: {ckpt.best_model_path}", flush=True)
 
     # Evaluate on fold test
     test_metrics = trainer.test(dataloaders=test_loader, ckpt_path="best")[0]
-    print("Fold test metrics:", test_metrics)
+    print(f"Fold test RMSE: " +
+          ", ".join([f"{k}={v:.4f}" for k, v in test_metrics.items() if 'rmse' in k.lower()]), flush=True)
 
-    # Evaluate on external test
+    # Evaluate on sexual test set
     ext_metrics = trainer.test(dataloaders=ext_loader, ckpt_path="best")[0]
-    print("External test metrics:", ext_metrics)
+    print(f"External test RMSE: " +
+          ", ".join([f"{k}={v:.4f}" for k, v in ext_metrics.items() if 'rmse' in k.lower()]), flush=True)
 
     # Visuals: predicted vs true for both test sets
     def save_pred_plot(loader, df_true, out_png):
@@ -158,5 +181,7 @@ for i in range(1, 6):
 # Write summary
 summary = pd.DataFrame(rows).set_index("fold")
 summary.to_csv(OUTPUTDIR / "cv_results_with_external.csv")
-print("\nPer-fold summary:\n", summary[["fold_test_rmse","external_rmse"]])
+print("\nPer-fold summary (RMSE columns):\n", summary[["fold_test_rmse","external_rmse"]])
 print("\nMeans:\n", summary[["fold_test_rmse","external_rmse"]].mean())
+print(f"\nLogs & checkpoints at: {OUTPUTDIR}")
+print(f"(If you installed TensorBoard: tensorboard --logdir {OUTPUTDIR})")
