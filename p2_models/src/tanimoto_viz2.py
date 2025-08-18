@@ -200,7 +200,7 @@ def main():
         ax.hlines(p05, x+0.08, x+0.28, colors="black", linewidth=1.3)
         ax.text(x+0.35, p05, f"{p05:.2f}", ha="left",  va="center", fontsize=9)
 
-        # Q1 & Q3
+        # Q1 & Q3: small centered ticks (no labels to avoid clutter)
         ax.hlines(q1, x-0.08, x-0.28, colors="black", linewidth=1.3)
         ax.text(x-0.35, q1, f"{q1:.2f}", ha="right", va="center", fontsize=9)
         ax.hlines(q3, x-0.08, x-0.28, colors="black", linewidth=1.3)

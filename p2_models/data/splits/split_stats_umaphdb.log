@@ -1,0 +1,10 @@
+[umap_hdb | fold 1] train 12,470 | val  3,962 | test  7,925 | actives≥6.0 val: 2,301 test: 5,165
+    mean max-Tanimoto(test→train) = 0.622
+[umap_hdb | fold 2] train 11,694 | val  3,962 | test  7,925 | actives≥6.0 val: 2,313 test: 4,605
+    mean max-Tanimoto(test→train) = 0.544
+[umap_hdb | fold 3] train 11,965 | val  3,962 | test  7,925 | actives≥6.0 val: 2,372 test: 4,349
+    mean max-Tanimoto(test→train) = 0.537
+[umap_hdb | fold 4] train 11,862 | val  3,962 | test  7,925 | actives≥6.0 val: 2,377 test: 4,598
+    mean max-Tanimoto(test→train) = 0.566
+[umap_hdb | fold 5] train 11,903 | val  3,962 | test  7,924 | actives≥6.0 val: 2,323 test: 4,623
+    mean max-Tanimoto(test→train) = 0.568
