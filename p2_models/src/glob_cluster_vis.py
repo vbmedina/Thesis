@@ -4,12 +4,13 @@ from rdkit import Chem, DataStructs
 from rdkit.Chem import AllChem
 import umap, seaborn as sns, matplotlib.pyplot as plt
 from scipy.spatial import ConvexHull
+from matplotlib.lines import Line2D  # <-- added
 
 BASE = Path("p2_models/data/splits")
 METHODS = ["random","scaffold","butina","umap","umap_hdb"]
 FOLDS = [1,2,3,4,5]
 SMI_COL = "Smiles"
-N_BITS, RADIUS = 2048, 2
+N_BITS, RADIUS = 1024, 2
 OUT = Path("p2_models/data/figures/split_folds_embedding.png")
 
 def find_file(dirp, method, fold, split):
@@ -35,8 +36,10 @@ for m in METHODS:
             continue
         df = pd.read_csv(p)
         all_smi.update(df[SMI_COL].dropna().astype(str).tolist())
+
 all_smi = [s for s in (canon(s) for s in all_smi) if s is not None]
-if not all_smi: raise SystemExit("No molecules found.")
+if not all_smi:
+    raise SystemExit("No molecules found.")
 
 # ECFP4 bits and a single UMAP (Hamming ≈ Tanimoto on bits)
 rows = []
@@ -46,6 +49,7 @@ for s in all_smi:
     DataStructs.ConvertToNumpyArray(bv, arr)
     rows.append(arr > 0)
 X = np.vstack(rows)
+
 embed = umap.UMAP(n_components=2, metric="hamming", n_neighbors=30, min_dist=0.15, random_state=42)
 XY = embed.fit_transform(X)
 idx = {s:i for i,s in enumerate(all_smi)}
@@ -67,9 +71,14 @@ for m in present:
 
 # Plot panels
 sns.set_style("whitegrid")
+# --- added: make all subplot titles bigger & bold ---
+plt.rcParams["axes.titlesize"] = 14
+plt.rcParams["axes.titleweight"] = "bold"
+
 n = len(present)
-fig, axes = plt.subplots(1, n, figsize=(5*n,5), sharex=True, sharey=True)
+fig, axes = plt.subplots(1, n, figsize=(5*n, 5), sharex=True, sharey=True)
 if n == 1: axes = [axes]
+
 pad = 5
 xlim = (XY[:,0].min()-pad, XY[:,0].max()+pad)
 ylim = (XY[:,1].min()-pad, XY[:,1].max()+pad)
@@ -91,10 +100,30 @@ for ax, m in zip(axes, present):
                 pass
     ax.set_xlim(*xlim); ax.set_ylim(*ylim)
 
-handles, lbls = axes[-1].get_legend_handles_labels()
-fig.legend(handles, lbls, loc="center left", bbox_to_anchor=(1.02, 0.5), title="Folds")
-fig.suptitle("Molecular distribution for each fold under different splits", y=0.98, fontsize=14)
-plt.tight_layout(rect=[0,0,0.9,0.95])
+# Legend using reds
+legend_handles = [
+    Line2D([0], [0],
+           marker='o', linestyle='None', markersize=10,
+           markerfacecolor=palette[f-1], markeredgecolor=palette[f-1],
+           label=f"Fold {f}")
+    for f in FOLDS
+]
+fig.legend(
+    handles=legend_handles,
+    loc="center left",
+    bbox_to_anchor=(0.895, 0.5),
+    title="Folds",
+    frameon=False,
+    handlelength=1.8,
+    handleheight=0.6,
+    handletextpad=0.2,
+    labelspacing=0.5,
+    prop={"size": 12},
+    title_fontsize=14
+)
+
+fig.suptitle("Molecular distribution for each fold under different splits", y=0.98, fontsize=20)
+plt.tight_layout(rect=[0, 0, 0.90, 0.99])
 OUT.parent.mkdir(parents=True, exist_ok=True)
 fig.savefig(OUT, dpi=300)
-print(f"[ok] saved -> {OUT}")
+print(f"Saved to {OUT}")
