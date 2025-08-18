@@ -110,10 +110,10 @@ def split_umap_hdb(ds, k, seed):
 
 # Splits
 SPLITS = {
-    # "random"   : split_random,
-    # "scaffold" : split_scaffold,
-    # "butina"   : split_butina,
-    # "umap"     : split_umap_k,
+    "random"   : split_random,
+    "scaffold" : split_scaffold,
+    "butina"   : split_butina,
+    "umap"     : split_umap_k,
     "umap_hdb" : split_umap_hdb,
 }
 
