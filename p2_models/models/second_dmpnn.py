@@ -8,22 +8,27 @@ from lightning.pytorch.callbacks import ModelCheckpoint, EarlyStopping
 from lightning.pytorch.loggers import TensorBoardLogger
 from chemprop import data, featurizers, models, nn
 
-# ---------------- Configuration (same as your working script) ----------------
-ALL_SPLITS = ["random", "scaffold", "butina", "umap_hdb"] 
+# Config
+ALL_SPLITS = ["umap","random", "scaffold", "butina", "umap_hdb"] 
 p2models_dir = Path.home() / "Thesis/p2_models"
 BASE_SPLITS_DIR = p2models_dir / "data" / "splits"
-BASE_OUT_DIR    = p2models_dir / "models" / "checkpoints"
+BASE_OUT_DIR = p2models_dir / "models" / "checkpoints"
 
+# Sexual Test Data
 EXTERNAL_TEST_CSV = p2models_dir / "data" / "splits" / "sexual_test.csv"
 
+# Inputs
 SMILES_COL = "Smiles"
 TARGET_COLS = ["pIC50"]
-NUM_WORKERS = 0
-MAX_EPOCHS  = 200        # bump this from 1 so EarlyStopping can actually trigger
-PATIENCE    = 15
-use_gpu     = torch.cuda.is_available()
 
-# ---------------- Helpers ----------------
+# Settings
+NUM_WORKERS = 0
+MAX_EPOCHS = 200
+PATIENCE = 15
+use_gpu = torch.cuda.is_available()
+
+# Helpers
+# Finding file paths
 def find_file(split_dir: Path, split: str, i: int, kind: str) -> Path:
     for name in (f"{split}_fold_{i}_{kind}.csv", f"{split}_fold{i}_{kind}.csv"):
         p = split_dir / name
@@ -41,6 +46,7 @@ def pull_rmse(d):
             return float(v)
     return np.nan
 
+# Ploting True vs Predicted Values per fold
 def save_pred_plot(trainer, model, loader, df_true, out_png, split_name: str, fold: int, dataset_label: str):
     with torch.no_grad():
         preds_batches = trainer.predict(model=model, dataloaders=loader, ckpt_path="best")
@@ -72,16 +78,15 @@ def save_pred_plot(trainer, model, loader, df_true, out_png, split_name: str, fo
     ax.legend(loc="best", frameon=True, facecolor="white", framealpha=0.95)
     fig.tight_layout(); fig.savefig(out_png, dpi=300); plt.close(fig)
 
-    # predictions CSV next to the plot
     pd.DataFrame({"Smiles": df_true[SMILES_COL], "y_true": y_true, "y_pred": y_hat}) \
       .to_csv(Path(out_png).with_suffix(".csv"), index=False)
 
-# ---------------- Main: loop over splits, then folds ----------------
+# Main loop for splits
 df_external = pd.read_csv(EXTERNAL_TEST_CSV)
 all_rows = []
 
 for SPLIT in ALL_SPLITS:
-    print(f"\n######################  SPLIT: {SPLIT.upper()}  ######################", flush=True)
+    print(f"\n SPLIT: {SPLIT.upper()}", flush=True)
 
     SPLIT_DIR = BASE_SPLITS_DIR / SPLIT
     OUTPUTDIR = (BASE_OUT_DIR / SPLIT); OUTPUTDIR.mkdir(parents=True, exist_ok=True)
@@ -146,7 +151,8 @@ for SPLIT in ALL_SPLITS:
             enable_checkpointing=True,
             enable_progress_bar=True,
         )
-
+        
+        # Print statement for training and checkpoints comparing test outputs
         print(f"Training (max_epochs={MAX_EPOCHS}, patience={PATIENCE})...", flush=True)
         trainer.fit(model, train_dataloaders=train_loader, val_dataloaders=val_loader)
         print(f"Best checkpoint: {ckpt.best_model_path}", flush=True)
@@ -157,7 +163,7 @@ for SPLIT in ALL_SPLITS:
         ext_rmse  = pull_rmse(ext_metrics)
         print(f"Fold test RMSE={test_rmse:.4f} | External RMSE={ext_rmse:.4f}", flush=True)
 
-        # visuals
+        # Visuals
         save_pred_plot(trainer, model, test_loader, df_test,
                        fold_out / "pred_vs_true_fold_test.png", SPLIT, i, "Fold Test Data")
         save_pred_plot(trainer, model, ext_loader,  df_external,
@@ -167,12 +173,12 @@ for SPLIT in ALL_SPLITS:
         per_split_rows.append(row)
         all_rows.append(row)
 
-    # save per-split summary
+    # Save per-split summary
     per_split_df = pd.DataFrame(per_split_rows).set_index(["split", "fold"])
     per_split_df.to_csv(OUTPUTDIR / "cv_results_with_external.csv")
     print(f"\n>>> {SPLIT} summary:\n", per_split_df.groupby(level=0).mean())
 
-# save combined summary across all splits
+# Save combined summary across all splits
 all_df = pd.DataFrame(all_rows).set_index(["split", "fold"]).sort_index()
 all_df.to_csv(BASE_OUT_DIR / "cv_results_with_external_ALL.csv")
 print("\n====================  ALL SPLITS — MEANS  ====================")
