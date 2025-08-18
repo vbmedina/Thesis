@@ -1,4 +1,5 @@
 # Conda activate molml 
+
 # Imports
 from pathlib import Path
 import numpy as np
@@ -9,7 +10,7 @@ from matplotlib import cm
 
 from rdkit import Chem, DataStructs, RDLogger
 from rdkit.Chem import rdFingerprintGenerator as FPG
-from rdkit.Chem import AllChem  # fallback path
+from rdkit.Chem import AllChem
 
 RDLogger.DisableLog("rdApp.warning")
 
@@ -38,12 +39,12 @@ try:
         m = Chem.MolFromSmiles(smi)
         return FP_GEN.GetFingerprint(m)
 except Exception as e:
-    print(f"[WARN] MorganGenerator unavailable ({e}). Falling back to AllChem.GetMorganFingerprintAsBitVect.")
+    print(f"[WARNING] MorganGenerator unavailable ({e}). Falling back to AllChem.GetMorganFingerprintAsBitVect.")
     def ecfp4_bits(smi: str):
         m = Chem.MolFromSmiles(smi)
         return AllChem.GetMorganFingerprintAsBitVect(m, int(RADIUS), nBits=int(N_BITS))
 
-EXCLUDE_IDENTICAL = True  # drop exact SMILES matches when computing nearest train neighbor (????)
+EXCLUDE_IDENTICAL = True  # drop exact SMILES matches when computing nearest train neighbor
 
 # Output
 FIG_DIR = DATA_ROOT / "figures"
@@ -119,15 +120,17 @@ def main():
 
         # Stats for annotation
     stats = (df.groupby("method")["max_tani"]
-            .agg(p05=lambda x: x.quantile(0.05),
-                    median="median",
-                    p95=lambda x: x.quantile(0.95),
-                    n="count")
-            .reset_index())
+             .agg(p05=lambda x: x.quantile(0.05),
+                  q1 =lambda x: x.quantile(0.25),
+                  median="median",
+                  q3 =lambda x: x.quantile(0.75),
+                  p95=lambda x: x.quantile(0.95),
+                  n="count")
+             .reset_index())
 
-    # Print summary (use p05, not p5)
-    print("\nPer-split summary (p05 / median / p95 / n):")
-    print(stats[["method", "n", "p05", "median", "p95"]].to_string(
+    # Print summary (of q1, q3, median, p05, and p95)
+    print("\nPer-split summary (p05 / q1 / median / q3 / p95 / n):")
+    print(stats[["method", "n", "p05", "q1", "median", "q3", "p95"]].to_string(
         index=False,
         float_format=lambda v: f"{v:.3f}" if isinstance(v, float) else str(v)
     ))
@@ -148,7 +151,7 @@ def main():
     sns.despine()
 
     # Create figure - figure size
-    fig, ax = plt.subplots(figsize=(10, 5))
+    fig, ax = plt.subplots(figsize=(12, 6))
 
     # Create figure - violin
     sns.violinplot(
@@ -171,11 +174,10 @@ def main():
     # Labels
     ax.set_xlabel("Splitting Method")
     ax.set_ylabel("Max Tanimoto Similarity to Training Set")
-    ax.set_ylim(0, 1.0)
-    ax.axhline(1.0, ls="--", lw=0.8, c="black", alpha=0.6)
+    ax.set_ylim(0, 1.2) # Edit line boundaries (upper limit > max tanimoto of 1)
     ax.set_title("Train-Test Tanimoto by Split", pad=12)
 
-   # Annotate median, 95th and 5th percentile
+   # Annotate q1, q3, median, and 5th/95th percentile
     x_pos = {m: i for i, m in enumerate(order)}
     for _, r in stats.iterrows():
         m = r["method"]
@@ -183,20 +185,26 @@ def main():
             continue
         x   = x_pos[m]
         p05 = float(r["p05"])
+        q1  = float(r["q1"])
         med = float(r["median"])
+        q3  = float(r["q3"])
         p95 = float(r["p95"])
 
-        # median
+        # Median
         ax.hlines(med, x-0.28, x-0.08, colors="black", linewidth=1.3)
         ax.text(x-0.35, med, f"{med:.2f}", ha="right", va="center", fontsize=9)
 
-        # 95th quartile
+        # 5th/95th percentile
         ax.hlines(p95, x+0.08, x+0.28, colors="black", linewidth=1.3)
         ax.text(x+0.35, p95, f"{p95:.2f}", ha="left",  va="center", fontsize=9)
-
-        # 5th quartile
         ax.hlines(p05, x+0.08, x+0.28, colors="black", linewidth=1.3)
         ax.text(x+0.35, p05, f"{p05:.2f}", ha="left",  va="center", fontsize=9)
+
+        # Q1 & Q3
+        ax.hlines(q1, x-0.08, x-0.28, colors="black", linewidth=1.3)
+        ax.text(x-0.35, q1, f"{q1:.2f}", ha="right", va="center", fontsize=9)
+        ax.hlines(q3, x-0.08, x-0.28, colors="black", linewidth=1.3)
+        ax.text(x-0.35, q3, f"{q3:.2f}", ha="right", va="center", fontsize=9)
 
     # Out
     fig.tight_layout()
