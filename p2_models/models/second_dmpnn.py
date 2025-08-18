@@ -9,7 +9,7 @@ from lightning.pytorch.loggers import TensorBoardLogger
 from chemprop import data, featurizers, models, nn
 
 # Config
-ALL_SPLITS = ["umap","random", "scaffold", "butina", "umap_hdb"] 
+ALL_SPLITS = ["umap_hdb"] #"umap","random", "scaffold", "butina", 
 p2models_dir = Path.home() / "Thesis/p2_models"
 BASE_SPLITS_DIR = p2models_dir / "data" / "splits"
 BASE_OUT_DIR = p2models_dir / "models" / "checkpoints"
