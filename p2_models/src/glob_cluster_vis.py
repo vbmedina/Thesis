@@ -4,8 +4,9 @@ from rdkit import Chem, DataStructs
 from rdkit.Chem import AllChem
 import umap, seaborn as sns, matplotlib.pyplot as plt
 from scipy.spatial import ConvexHull
-from matplotlib.lines import Line2D  # <-- added
+from matplotlib.lines import Line2D 
 
+# Directories
 BASE = Path("p2_models/data/splits")
 METHODS = ["random","scaffold","butina","umap","umap_hdb"]
 FOLDS = [1,2,3,4,5]
@@ -13,6 +14,7 @@ SMI_COL = "Smiles"
 N_BITS, RADIUS = 1024, 2
 OUT = Path("p2_models/data/figures/split_folds_embedding.png")
 
+# Helper for finding csv;s
 def find_file(dirp, method, fold, split):
     for pat in (f"{method}_fold_{fold}_{split}.csv", f"{method}_fold{fold}_{split}.csv"):
         hits = list((dirp/method).glob(pat))
@@ -41,7 +43,7 @@ all_smi = [s for s in (canon(s) for s in all_smi) if s is not None]
 if not all_smi:
     raise SystemExit("No molecules found.")
 
-# ECFP4 bits and a single UMAP (Hamming ≈ Tanimoto on bits)
+# ECFP4 bits and a single UMAP
 rows = []
 for s in all_smi:
     bv = AllChem.GetMorganFingerprintAsBitVect(Chem.MolFromSmiles(s), RADIUS, nBits=N_BITS)
@@ -54,7 +56,7 @@ embed = umap.UMAP(n_components=2, metric="hamming", n_neighbors=30, min_dist=0.1
 XY = embed.fit_transform(X)
 idx = {s:i for i,s in enumerate(all_smi)}
 
-# For each method, label each point with its TEST fold id (or -1)
+# For each method, label each point with its TEST fold id 
 labels = {}
 for m in present:
     lab = np.full(len(all_smi), -1, int)
@@ -71,14 +73,15 @@ for m in present:
 
 # Plot panels
 sns.set_style("whitegrid")
-# --- added: make all subplot titles bigger & bold ---
+
+# Subplots
 plt.rcParams["axes.titlesize"] = 14
 plt.rcParams["axes.titleweight"] = "bold"
-
 n = len(present)
 fig, axes = plt.subplots(1, n, figsize=(5*n, 5), sharex=True, sharey=True)
 if n == 1: axes = [axes]
 
+# Padding and color pallete
 pad = 5
 xlim = (XY[:,0].min()-pad, XY[:,0].max()+pad)
 ylim = (XY[:,1].min()-pad, XY[:,1].max()+pad)
@@ -108,6 +111,8 @@ legend_handles = [
            label=f"Fold {f}")
     for f in FOLDS
 ]
+
+# Legend
 fig.legend(
     handles=legend_handles,
     loc="center left",
@@ -122,6 +127,8 @@ fig.legend(
     title_fontsize=14
 )
 
+
+# Overall figure
 fig.suptitle("Molecular distribution for each fold under different splits", y=0.98, fontsize=20)
 plt.tight_layout(rect=[0, 0, 0.90, 0.99])
 OUT.parent.mkdir(parents=True, exist_ok=True)
