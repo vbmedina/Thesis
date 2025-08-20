@@ -1,12 +1,13 @@
-# Descriptio: When downloading csv files from ChEMBL, they may be semicolon-delimited.
-# This script converts them to comma-delimited CSV files.
+''' Description: This script is not needed for pipeline. Only use when freshly downloading CSV files from ChEMBL. Data directly
+downloaded from ChEMBL as a CSV is automatically downloaded with semicolon-delimiters. This script convert the CSV to a 
+comma-delimited file.''' 
 
 # Import
 import csv
 
 # Paths
-path= "/Users/victoriamedina/Thesis_Project/other.csv"
-new = "/Users/victoriamedina/Thesis_Project/other_f.csv"
+path= "./Thesis_Project/thesis/p0_all_csvs/insert_downloaded_csv_here.csv"
+new = "./Thesis_Project/thesis/p0_all_csvs/chembl_data_original.csv"
 
 # Ensure the source file exists
 with open(path, newline="", encoding="utf-8") as f_in, \

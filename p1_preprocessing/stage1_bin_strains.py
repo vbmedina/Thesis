@@ -1,4 +1,7 @@
-# Description: Bin Common Strains: This script processes a CSV file containing strain data, filtering out rows with missing strain information, and binning all strains as shown in Copy of Information on Datasets.csv.
+''' Description: This script is the first step to the pipeline (strains). Starting with the CSV "prephase1.csv", which
+was made using scripts from part 0 and manually, has a new column called "stand_strain". This has all the raw strains
+and isolates before binning them into major strains and isolates based on parental similarity. The use of this script uses
+pre-generated files list_of_strains and list_of_isolates manually made to map out associated strain or isolate. '''
 
 # Imports
 from pathlib import Path
@@ -6,9 +9,9 @@ import pandas as pd
 import numpy as np
 
 # Paths
-MAPPING_CSV_STRAINS = Path("./Do Not Touch/Copy of Information on Datasets Strains.csv")
-MAPPING_CSV_ISOLATES = Path("./Do Not Touch/Copy of Information on Datasets Isolates.csv")
-IN_CSV = Path("./Do Not Touch/prephase1.csv")
+MAPPING_CSV_STRAINS = Path(".Thesis_Project/thesis/p0_all_csvs//list_of_strains.csv")
+MAPPING_CSV_ISOLATES = Path(".Thesis_Project/thesis/p0_all_csvs/list_of_isolates.csv")
+IN_CSV = Path(".Thesis_Project/thesis/p0_all_csvs//prephase1.csv")
 
 # Read in the CSV files
 df = pd.read_csv(IN_CSV)
