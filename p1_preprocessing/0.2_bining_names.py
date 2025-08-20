@@ -1,3 +1,6 @@
+# Description: This script processes a CSV file to count occurrences of standardized strain names.
+
+# Imports
 import re
 import itertools
 from pathlib import Path
@@ -7,7 +10,6 @@ from collections import Counter
 
 # File path 
 path = "/Users/victoriamedina/Thesis_Project/Thesis/TESTING.csv"
-
 data = pd.read_csv(path)
 
 print(data.columns)

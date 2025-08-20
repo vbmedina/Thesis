@@ -1,3 +1,5 @@
+# Description: This script removes exact duplicate rows from a CSV file.
+
 from pathlib import Path
 import pandas as pd
 

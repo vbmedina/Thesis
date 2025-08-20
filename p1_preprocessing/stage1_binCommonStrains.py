@@ -1,6 +1,6 @@
-"""Stage 1: Bin Common Strains
-This script processes a CSV file containing strain data, filtering out rows with missing strain information, and binning all strains as shown in Copy of Information on Datasets.csv."""
+# Description: Bin Common Strains: This script processes a CSV file containing strain data, filtering out rows with missing strain information, and binning all strains as shown in Copy of Information on Datasets.csv.
 
+# Imports
 from pathlib import Path
 import pandas as pd
 import numpy as np

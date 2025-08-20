@@ -1,3 +1,7 @@
+# Description: For stage 2 of preprocessing (IC50), this script filters out rows from a CSV file based on specific conditions 
+# in the "Standard Relation" column removing rows with certain values like "~", ">", "≈", "NA", and "0".
+
+# Imports
 from pathlib import Path
 import pandas as pd
 

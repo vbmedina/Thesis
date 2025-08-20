@@ -1,4 +1,4 @@
-# When downloading csv files from ChEMBL, they may be semicolon-delimited.
+# Descriptio: When downloading csv files from ChEMBL, they may be semicolon-delimited.
 # This script converts them to comma-delimited CSV files.
 
 # Import
