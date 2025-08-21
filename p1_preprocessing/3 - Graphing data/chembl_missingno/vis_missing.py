@@ -1,10 +1,23 @@
+''' Description: This script generates a Missingno heatmap visualizing the completeness of strain-molecule pairings for 
+the top 50 strains and molecules based on their pIC50 scores. Missingno visualizations are particularly valuable for 
+sparse datasets, such as in this case, where missing data patterns can reveal systematic gaps in experimental coverage, guide 
+prioritization of future testing, and identify potential batch effects or technical limitations in the screening process.
+
+This script:
+1) Gnerates a Missingno heatmap for the top 50 strains and molecules based on their pIC50 scores.
+
+Preconditions:
+1) "pairings_table.csv" made in step 2 of the pipeline.
+2) "pairings_center_copy.csv" made in step 2 of the pipeline.
+'''
+
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 
 # Load datasets
 matrix_df = pd.read_csv("./pairings_table.csv", index_col=0)
-center_df = pd.read_csv("./pairings_center.csv", index_col=0)
+center_df = pd.read_csv("./pairings_center_copy.csv", index_col=0)
 
 # Drop "Grand Total"
 matrix_df = matrix_df.drop(index="Grand Total", errors="ignore")
@@ -63,4 +76,4 @@ plt.ylabel("Molecules")
 
 
 plt.tight_layout()
-plt.show()
+plt.savefig("./p1_preprocessing/3 - Graphing data/chembl_missingno/missingno.png", dpi=300)
