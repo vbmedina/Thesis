@@ -1,11 +1,15 @@
-# Description:
+''' Description: This script is the 1st part in finding a measure of center for molecules found in the cleaned 
+ChEMBL dataset. Many molecules in the dataset have multiple pIC50 values for the same strain. This section aims 
+to aggregate these strain-molecule pairs with all of their IC50 and pIC50 values. The output is a CSV file that 
+contains the number of each pairing, and their respective IC50 and pIC50 scores. 
+'''
 
 # Imports
 import pandas as pd
 import numpy as np
 
 # Load DF
-df = pd.read_csv("./pp.csv", low_memory=False)
+df = pd.read_csv("./p1_preprocessing/2 - pIC50 binning and averaging/final_data_copy.csv", low_memory=False)
 
 #Dicts
 ic50_dict = {}
