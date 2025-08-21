@@ -2,7 +2,7 @@ import pandas as pd
 from collections import Counter
 
 # File path to the CSV
-csv_file_path = "./pp.csv"
+csv_file_path = "./p1_preprocessing/3 - Graphing data/chembl_distribution_histograms/final_data_copy.csv"
 
 data = pd.read_csv(csv_file_path)
 
@@ -24,7 +24,7 @@ else:
 strain_counts_df = pd.DataFrame(strain_counts.items(), columns=["Strain", "Count"])
 
 # File path for the new CSV
-output_csv_path = "./str_counts.csv"
+output_csv_path = "./p1_preprocessing/3 - Graphing data/chembl_distribution_histograms/strain_counts.csv"
 
 # Save the DataFrame to a new CSV file
 strain_counts_df.to_csv(output_csv_path, index=False)
