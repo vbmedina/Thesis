@@ -1,6 +1,11 @@
-''' Description: Using the data from Step 2: pIC50 binning and average, this script uses a copy of the file 
-"pairings_center.csv" to generate a heatmap of the top 100 strain-molecule pairs in the whole ChEMBL dataset
-using a Representative pIC50. (reference: 2- pIC50 binning and average.py for more information on binning and averaging).'''
+''' 
+Description: This script generates a heatmap of the top 100 strain-molecule pairs in the ChEMBL dataset
+using a Representative pIC5 (Reference: 2- pIC5 binning and average.py for more information on binning and averaging of 
+pIC50).
+
+Preconditions:
+1) "pairings_center_copy.csv" made in step 2 of the pipeline.
+'''
 
 import pandas as pd
 import seaborn as sns
