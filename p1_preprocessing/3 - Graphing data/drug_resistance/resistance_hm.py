@@ -1,3 +1,8 @@
+''' Description: This script uses the CSV file generated from the Step 1. 1_mapping_drug_resistance.py
+to create heatmaps for different drug resistance flags. It visualizes the drug potency of the top 100 molecules
+tested against various strains, categorized by their resistance flags.'''
+
+# Imports
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -6,7 +11,7 @@ import seaborn as sns
 df = pd.read_csv('./pp.csv')
 df_clean = df.dropna(subset=['Representative_pIC50'])
 
-# CQR HM ---------------------------------------------------------------
+# 1. CQR HM ---------------------------------------------------------------
 # Filter for "CQR"
 df_cqr = df_clean[df_clean['Flag Groups'].str.contains('CQR', na=False)]
 
@@ -64,7 +69,7 @@ plt.tight_layout()
 plt.subplots_adjust(bottom=0.25)
 plt.show()
 
-# MRFR HM ---------------------------------------------------------------
+# 2. MRFR HM ---------------------------------------------------------------
 # Filter for "MEFR"
 df_cqr = df_clean[df_clean['Flag Groups'].str.contains('MEFR', na=False)]
 
@@ -121,7 +126,7 @@ plt.tight_layout()
 plt.subplots_adjust(bottom=0.25) 
 plt.show()
 
-# PYRR HM ---------------------------------------------------------------
+# 3. PYRR HM ---------------------------------------------------------------
 # Filter for "PYRR"
 df_cqr = df_clean[df_clean['Flag Groups'].str.contains('PYRR', na=False)]
 
@@ -178,7 +183,7 @@ plt.tight_layout()
 plt.subplots_adjust(bottom=0.25) 
 plt.show()
 
-# CQS HM ---------------------------------------------------------------
+# 4. CQS HM ---------------------------------------------------------------
 # Filter for "CQS"
 df_cqr = df_clean[df_clean['Flag Groups'].str.contains('CQS', na=False)]
 
@@ -235,7 +240,7 @@ plt.tight_layout()
 plt.subplots_adjust(bottom=0.25) 
 plt.show()
 
-# MEFS HM ---------------------------------------------------------------
+# 5. MEFS HM ---------------------------------------------------------------
 # Filter for "MEFS"
 df_cqr = df_clean[df_clean['Flag Groups'].str.contains('MEFS', na=False)]
 
