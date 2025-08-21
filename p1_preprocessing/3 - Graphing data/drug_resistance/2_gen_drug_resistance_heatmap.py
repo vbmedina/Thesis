@@ -67,8 +67,6 @@ plt.xlabel('Strain')
 plt.ylabel('Molecule ChEMBL ID')
 plt.tight_layout()
 plt.subplots_adjust(bottom=0.25)
-plt.show()
-
 plt.savefig('./p1_preprocessing/3 - Graphing data/drug_resistance/cqr_hm.png', dpi=300, bbox_inches='tight')
 
 # 2. MRFR HM ---------------------------------------------------------------
@@ -126,8 +124,6 @@ plt.xlabel('Strain')
 plt.ylabel('Molecule ChEMBL ID')
 plt.tight_layout()
 plt.subplots_adjust(bottom=0.25) 
-plt.show()
-
 plt.savefig('./p1_preprocessing/3 - Graphing data/drug_resistance/mefr_hm.png', dpi=300, bbox_inches='tight')
 
 # 3. PYRR HM ---------------------------------------------------------------
@@ -185,8 +181,6 @@ plt.xlabel('Strain')
 plt.ylabel('Molecule ChEMBL ID')
 plt.tight_layout()
 plt.subplots_adjust(bottom=0.25) 
-plt.show()
-
 plt.savefig('./p1_preprocessing/3 - Graphing data/drug_resistance/pyrr_hm.png', dpi=300, bbox_inches='tight')
 
 # 4. CQS HM ---------------------------------------------------------------
@@ -244,8 +238,6 @@ plt.xlabel('Strain')
 plt.ylabel('Molecule ChEMBL ID')
 plt.tight_layout()
 plt.subplots_adjust(bottom=0.25) 
-plt.show()
-
 plt.savefig('./p1_preprocessing/3 - Graphing data/drug_resistance/cqs_hm.png', dpi=300, bbox_inches='tight')
 
 # 5. MEFS HM ---------------------------------------------------------------
@@ -305,5 +297,4 @@ plt.xlabel('Strain')
 plt.ylabel('Molecule ChEMBL ID')
 plt.tight_layout()
 plt.subplots_adjust(bottom=0.25) 
-plt.show()
 plt.savefig('./p1_preprocessing/3 - Graphing data/drug_resistance/mefs_hm.png', dpi=300, bbox_inches='tight')
