@@ -1,5 +1,9 @@
-''' Description: This script generates a CSV file containing the counts of unique molecules and their occurrences
-in a dataset, specifically focusing on the "Molecule_ChEMBL_ID" column.
+''' Description: This script generates a set of histograms visualizing the distribution of strain and molecule counts.
+This script:
+1) Generates histograms for the top 50 strains with most amount of pIC50 scores (non-unique molecules).
+2) Generates a histogram for the top 50 molecules with most amount of pIC50 score (non-unique strain coverage)
+2) Creates a histogram for the top 50 molecules based on unique strain coverage.
+
 Preconditions:
 1) "strain_counts.csv" - generated from strain_counts.py
 2) "molecule_counts.csv" - generated from molecule_counts.py
@@ -28,8 +32,8 @@ sns.barplot(data=top_strains, x='Strain', y='Count', palette=strain_palette)
 # Customizations
 plt.xticks(rotation=45, ha='right', fontsize=9)
 plt.xlabel('Strain Identifier', fontsize=12)
-plt.ylabel('Number of Times Tested', fontsize=12)
-plt.title('Top 50 Most Frequently Tested Strains', fontsize=14)
+plt.ylabel('Number of pIC50 Scores', fontsize=12)
+plt.title('Top 50 Strains with the Greatest Amount of pIC50 Scores in CHEMBL364 Dataset (non-unique molecules)', fontsize=14)
 plt.tight_layout()
 
 # Save and display
@@ -53,8 +57,8 @@ sns.barplot(data=top_molecules, x='Molecule', y='Count', palette=molecule_palett
 # Customizations
 plt.xticks(rotation=45, ha='right', fontsize=7)
 plt.xlabel('ChEMBL Molecule Identifier', fontsize=12)
-plt.ylabel('Number of Times Tested', fontsize=12)
-plt.title('Top 50 Most Frequently Tested Molecules', fontsize=14)
+plt.ylabel('Number of IC50 Scores', fontsize=12)
+plt.title('Top 50 Molecules with the Greatest Amount of pIC50 Scores in CHEMBL364 Dataset (non-unique strain coverage)', fontsize=14)
 plt.tight_layout()
 
 # Save and display
@@ -84,7 +88,7 @@ sns.barplot(data=unique_strain_counts, x='Molecule', y='UniqueStrains', palette=
 plt.xticks(rotation=45, ha='right', fontsize=7)
 plt.xlabel('ChEMBL Molecule Identifier', fontsize=12)
 plt.ylabel('Number of Unique Strains Tested', fontsize=12)
-plt.title('Top 50 Molecules by Most Unique Strain Coverage', fontsize=14)
+plt.title('Top 50 Molecules by Most Unique Strain Coverage in CHEMBL364 Dataset', fontsize=14)
 plt.tight_layout()
 
 # Save and display
