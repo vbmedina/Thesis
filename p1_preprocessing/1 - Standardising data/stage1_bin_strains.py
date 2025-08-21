@@ -1,17 +1,20 @@
-''' Description: This script is the first step to the pipeline (strains). Starting with the CSV "prephase1.csv", which
-was made using scripts from part 0 and manually, has a new column called "stand_strain". This has all the raw strains
-and isolates before binning them into major strains and isolates based on parental similarity. The use of this script uses
-pre-generated files list_of_strains and list_of_isolates manually made to map out associated strain or isolate. '''
+''' Description: This script is the first stage to the pipeline (strains). It works on the strain and isolate names.
+This script:
+1) bins synonyms of strains and isolates into a single name. (binning based on parental similarity)
+
+Preconditions:
+1) "prephase1.csv" - which comes from both part 0, and manually adding "stand_strain". "stand_strain" has all the raw strains and isolates. 
+2) "list_of_strains.csv" - pre-generated map of strain synonyms to single strain name.
+3) "list_of_isolates.csv" - pre-generated map of isolate synonyms to single isolate name.'''
 
 # Imports
 from pathlib import Path
 import pandas as pd
-import numpy as np
 
 # Paths
-MAPPING_CSV_STRAINS = Path(".Thesis_Project/thesis/p0_all_csvs//list_of_strains.csv")
-MAPPING_CSV_ISOLATES = Path(".Thesis_Project/thesis/p0_all_csvs/list_of_isolates.csv")
-IN_CSV = Path(".Thesis_Project/thesis/p0_all_csvs//prephase1.csv")
+MAPPING_CSV_STRAINS = Path("./p0_all_csvs/list_of_strains.csv")
+MAPPING_CSV_ISOLATES = Path("./p0_all_csvs/list_of_isolates.csv")
+IN_CSV = Path("./p0_all_csvs/prephase1.csv")
 
 # Read in the CSV files
 df = pd.read_csv(IN_CSV)

@@ -46,4 +46,4 @@ for key in ic50_dict:
     }
 
 # Save the new DataFrame to a CSV file
-new_data.to_csv("./pairing_IC50_pIC50.csv", index=False)
+new_data.to_csv("../3 - Graphing data/pairing_IC50_pIC50.csv", index=False)

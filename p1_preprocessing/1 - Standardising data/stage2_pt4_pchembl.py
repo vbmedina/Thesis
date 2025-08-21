@@ -1,18 +1,23 @@
-# Description: For stage 2 of preprocessing (IC50), this script converts IC50 ("Standard_Value") values to pIC50 values 
-# and adds them to a new column in the CSV file a new column called "pIC50".
+''' Description: This script is the second stage to the pipeline (IC50). It works on the IC50 scores.
+This script:
+1) Converts IC50 ("Standard_Value") values to pIC50 values - new column "pIC50"
+
+
+Preconditions:
+1) "postphase2_deleteEquiv.csv" - generated from stage2 pt3'''
 
 # Imports
 import pandas as pd
 import numpy as np
 
 # Path
-IN_CSV = "./do_not_touch/postphase2_deleteEquiv.csv"
-OUT_CSV = "./do_not_touch/postphase2_CorrectpIC50.csv"
+IN_CSV = "./p0_all_csvs/postphase2_deleteEquiv.csv"
+OUT_CSV = "./p0_all_csvs/postphase2_CorrectpIC50.csv"
 
 # Load the data
 df = pd.read_csv(IN_CSV)
 
-# Sanity check: Numeric values should remain in "Standard Value"
+# Sanity check: Numeric values should remain in "Standard Value". Print any non-numeric values
 for i, value in df["Standard_Value"].items():
     if not isinstance(value, (int, float)):
         print(f"Row {i} has non-numeric Standard Value: {value}")
@@ -24,7 +29,7 @@ def convert(ic50_nM):
     ic50_M = ic50_nM * 1e-9
     return -np.log10(ic50_M)  
 
-# Apply the tool on 'Standard_Value' to create 'pIC50'
+# Apply the tool on 'Standard_Value' to create 'pIC50'. Round to 2 decimal places
 df['pIC50'] = df['Standard_Value'].apply(convert).round(2)
 
 # Sanity check for pIC50 values

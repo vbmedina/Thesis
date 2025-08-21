@@ -1,18 +1,22 @@
-# Description: For stage 2 of preprocessing (IC50), this script filters out rows from a CSV file based on specific conditions 
-# in the "Standard Relation" column removing rows with certain values like "~", ">", "≈", "NA", and "0".
+''' Description: This script is the second stage to the pipeline (IC50). It works on the IC50 scores.
+This script: 
+1) deletes rows where "Standard Relation" column contains "~", ">", "≈", "NA", and "0".
+
+Preconditions:
+1) "postphase2_deleteDuplicates.csv" - generated from stage2 pt2'''
 
 # Imports
 from pathlib import Path
 import pandas as pd
 
 # Paths
-csv_in = Path("./do_not_touch/postphase2_deleteDuplicates.csv")
-csv_out = Path("./do_not_touch/postphase2_deleteEquiv.csv")
+csv_in = Path("./p0_all_csvs/postphase2_deleteDuplicates.csv")
+csv_out = Path("./p0_all_csvs/postphase2_deleteEquiv.csv")
 
 # Load DF
 df = pd.read_csv(csv_in)
 
-# Filter on "Standard Relation" 
+# If the "Standard Relation" row contains a ~, >, ≈, NA or 0, remove it
 before = len(df)
 df = df.dropna(subset=["Standard Relation"])
 df = df[~df["Standard Relation"].str.contains("~", na=False)]

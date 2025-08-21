@@ -79,4 +79,4 @@ def match_pIC50(row):
 
 iter_pp['Representative_pIC50'] = iter_pp.apply(match_pIC50, axis=1)
 
-iter_pp.to_csv("test.csv", index=False)
+iter_pp.to_csv("../3 - Graphing data/test.csv", index=False)
