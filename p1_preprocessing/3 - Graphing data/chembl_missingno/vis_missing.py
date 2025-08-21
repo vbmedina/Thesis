@@ -17,7 +17,7 @@ import matplotlib.pyplot as plt
 
 # Load datasets
 matrix_df = pd.read_csv("./p1_preprocessing/3 - Graphing data/chembl_missingno/pairings_table.csv", index_col=0)
-center_df = pd.read_csv("./thesis/p1_preprocessing/3 - Graphing data/chembl_missingno/pairings_center_copy.csv", index_col=0)
+center_df = pd.read_csv("./p1_preprocessing/3 - Graphing data/chembl_missingno/pairings_center_copy.csv", index_col=0)
 
 # Drop "Grand Total"
 matrix_df = matrix_df.drop(index="Grand Total", errors="ignore")
