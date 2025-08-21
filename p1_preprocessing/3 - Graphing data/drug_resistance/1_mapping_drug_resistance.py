@@ -1,15 +1,21 @@
 ''' Description: This script is used to scrape drug resistance flags from the 'Assay Description' for 
-visualizations and analysis.'''
+visualizations and analysis.
+
+Requirements:
+1) final_data.csv - from Step 2 if pipeline.
+2) "mapped_resistance_flags.csv" - A pre-made mapping of flags to their groups. If using a different dataset,
+or updated dataset this file will need to be updated.
+'''
 
 import pandas as pd
 
 ''' Section 1. Create personalized strain scraping CSV file with drug resistance flags.
 1. Load the CSV file containing all chemical data.
 2. We will scrape the 'Assay Description' column for drug resistance flags.
-3. Create a new (temporary) column 'Flag resistance' to store the extracted flags.
-'''
+3. Create a new (temporary) column 'Flag resistance' to store the extracted flags.'''
+
 # Load the csv
-df = pd.read_csv("./p1_preprocessing/3 - Graphing data/drug_resistance/csv_without_flags.csv")
+df = pd.read_csv("./p1_preprocessing/3 - Graphing data/drug_resistance/final_data_copy.csv")
 def flag_drug_resistance(description):
     description = description.lower()
     description = description.replace("-", " ")
@@ -50,6 +56,6 @@ df['Flag Groups'] = df['Flag resistance'].map(mapping)
 df = df.drop(columns=['Flag resistance'])
 
 # Save the updated DataFrame with flag groups to a new CSV file
-df.to_csv("./p1_preprocessing/3 - Graphing data/drug_resistance/csv_with_flags.csv", index=False)
+df.to_csv("./p1_preprocessing/3 - Graphing data/drug_resistance/final_data_with_flags.csv", index=False)
 
 print("File saved as 'csv_with_flags.csv'")

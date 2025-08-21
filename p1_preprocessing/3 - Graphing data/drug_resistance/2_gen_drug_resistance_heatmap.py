@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 # Load and clean the data
-df = pd.read_csv('./p1_preprocessing/3 - Graphing data/drug_resistance/csv_with_flags.csv')
+df = pd.read_csv('./p1_preprocessing/3 - Graphing data/drug_resistance/final_data_with_flags.csv')
 df_clean = df.dropna(subset=['Representative_pIC50'])
 
 # 1. CQR HM ---------------------------------------------------------------
@@ -32,7 +32,7 @@ df_top100_mols = df_cqr[df_cqr['Molecule_ChEMBL_ID'].isin(top_molecules)]
 # Pivot to matrix for heatmap
 heatmap_data = df_top100_mols.pivot_table(
     index='Molecule_ChEMBL_ID',
-    columns='Strains',
+    columns='standardized_strain',
     values='Representative_pIC50'
 )
 
@@ -89,7 +89,7 @@ df_top100_mols = df_cqr[df_cqr['Molecule_ChEMBL_ID'].isin(top_molecules)]
 # Pivot to matrix for heatmap
 heatmap_data = df_top100_mols.pivot_table(
     index='Molecule_ChEMBL_ID',
-    columns='Strains',
+    columns='standardized_strain',
     values='Representative_pIC50'
 )
 
@@ -146,7 +146,7 @@ df_top100_mols = df_cqr[df_cqr['Molecule_ChEMBL_ID'].isin(top_molecules)]
 # Pivot to matrix for heatmap
 heatmap_data = df_top100_mols.pivot_table(
     index='Molecule_ChEMBL_ID',
-    columns='Strains',
+    columns='standardized_strain',
     values='Representative_pIC50'
 )
 
@@ -203,7 +203,7 @@ df_top100_mols = df_cqr[df_cqr['Molecule_ChEMBL_ID'].isin(top_molecules)]
 # Pivot to matrix for heatmap
 heatmap_data = df_top100_mols.pivot_table(
     index='Molecule_ChEMBL_ID',
-    columns='Strains',
+    columns='standardized_strain',
     values='Representative_pIC50'
 )
 
@@ -261,7 +261,7 @@ df_top100_mols = df_cqr[df_cqr['Molecule_ChEMBL_ID'].isin(top_molecules)]
 # Pivot to matrix for heatmap
 heatmap_data = df_top100_mols.pivot_table(
     index='Molecule_ChEMBL_ID',
-    columns='Strains',
+    columns='standardized_strain',
     values='Representative_pIC50'
 )
 
