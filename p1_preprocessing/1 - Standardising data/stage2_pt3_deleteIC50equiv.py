@@ -10,8 +10,8 @@ from pathlib import Path
 import pandas as pd
 
 # Paths
-csv_in = Path("./p0_all_csvs/postphase2_deleteDuplicates.csv")
-csv_out = Path("./p0_all_csvs/postphase2_deleteEquiv.csv")
+csv_in = Path("./p0_all_csvs/postphase2_2.csv")
+csv_out = Path("./p0_all_csvs/postphase2_3.csv")
 
 # Load DF
 df = pd.read_csv(csv_in)

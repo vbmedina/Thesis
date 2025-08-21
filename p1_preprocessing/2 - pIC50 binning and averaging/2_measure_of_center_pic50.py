@@ -78,7 +78,7 @@ def match_pIC50(row):
     #return the pIC50 value from parings_center.csv if the strain and chemical match
     if int(row.name) % 1000 == 0:
         print(row.name)
-    strain = row['Strains']
+    strain = row['standardized_strain']
     chemical = row['Molecule_ChEMBL_ID']
     match = pairings_df[(pairings_df['Strain'] == strain) & (pairings_df['Molecule'] == chemical)]
     if not match.empty:
@@ -86,4 +86,4 @@ def match_pIC50(row):
 
 iter_fd['Representative_pIC50'] = iter_fd.apply(match_pIC50, axis=1)
 
-iter_fd.to_csv("../3 - Graphing data/test.csv", index=False)
+iter_fd.to_csv("./p1_preprocessing/2 - pIC50 binning and averaging/final_data_copy.csv", index=False)

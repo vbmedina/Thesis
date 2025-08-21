@@ -14,7 +14,7 @@ import pandas as pd
 
 # Path
 csv = Path("./p0_all_csvs/postphase1_strainsmerged.csv")
-out = Path("./p0_all_csvs/postphase2_convertedUnits.csv")
+out = Path("./p0_all_csvs/postphase2_1.csv")
 
 # Load
 df = pd.read_csv(csv, low_memory=False) 

@@ -11,8 +11,8 @@ import pandas as pd
 import numpy as np
 
 # Paths
-in_path   = "./p0_all_csvs/postphase2_CorrectpIC50.csv"      
-out_path  = "./p0_all_csvs/postphase2_cleaned.csv"               
+in_path   = "./p0_all_csvs/postphase2_4.csv"      
+out_path  = "./p0_all_csvs/postphase2_5.csv"               
 
 # Load the data
 df = pd.read_csv(in_path)

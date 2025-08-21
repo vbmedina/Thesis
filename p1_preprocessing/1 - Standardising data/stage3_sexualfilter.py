@@ -11,7 +11,7 @@ from pathlib import Path
 import pandas as pd
 
 # Paths
-csv_in  = Path("./p0_all_csvs/postphase2_cleaned.csv")
+csv_in  = Path("./p0_all_csvs/postphase2_5.csv")
 out_fir = Path("./p0_all_csvs/postphase3_Asexual_Only.csv")
 out_sec = Path("./p0_all_csvs/postphase3_Sexual_Only.csv")
 
