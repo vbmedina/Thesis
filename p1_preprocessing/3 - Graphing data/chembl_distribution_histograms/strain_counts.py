@@ -9,9 +9,9 @@ data = pd.read_csv(csv_file_path)
 print(data.columns)
 
 # Verify the column "stand_strain" exists
-if "Strains" in data.columns:
+if "standardized_strain" in data.columns:
     # Count occurrences of each item in the "stand_strain column
-    strain_counts = Counter(data["Strains"].dropna())
+    strain_counts = Counter(data["standardized_strain"].dropna())
     
     # Print the counts
     for strain, count in strain_counts.items():

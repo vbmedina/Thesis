@@ -65,14 +65,14 @@ unique_strain_counts = (pairings_data.groupby('Molecule')['Strain'].nunique()
     .reset_index()
     .sort_values(by='Strain', ascending=False))
 
-unique_strain_counts.columns = ['Chemical', 'UniqueStrains']
+unique_strain_counts.columns = ['Molecule', 'UniqueStrains']
 
 # Color palette
 diversity_palette = sns.color_palette("Reds", n_colors=50)[::-1]
 
 # Generate barplot 
 plt.figure(figsize=(14, 8))
-sns.barplot(data=unique_strain_counts, x='Chemical', y='UniqueStrains', palette=diversity_palette)
+sns.barplot(data=unique_strain_counts, x='Molecule', y='UniqueStrains', palette=diversity_palette)
 
 # Customizations
 plt.xticks(rotation=45, ha='right', fontsize=7)
