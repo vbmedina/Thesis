@@ -1,3 +1,9 @@
+''' Description: This script generates a CSV file containing the counts of unique strains and their occurrences
+in a dataset, specifically focusing on the "standardize_strain" column.
+Preconditions:
+1) "final_data_copy.csv"
+'''
+
 import pandas as pd
 from collections import Counter
 

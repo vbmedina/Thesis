@@ -1,6 +1,12 @@
-import re
+''' Description: This script generates a CSV file containing the counts of unique molecules and their occurrences
+in a dataset, specifically focusing on the "Molecule_ChEMBL_ID" column.
+Preconditions:
+1) "strain_counts.csv" - generated from strain_counts.py
+2) "molecule_counts.csv" - generated from molecule_counts.py
+3) "pairings_center_copy.csv" - generated from pairings_center.py made in step 2 of the pipeline
+'''
+
 import pandas as pd
-import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
 from matplotlib.colors import TwoSlopeNorm
