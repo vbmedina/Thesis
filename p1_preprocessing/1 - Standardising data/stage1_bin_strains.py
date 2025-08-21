@@ -48,10 +48,10 @@ for strain in df_mapping_strains["Strains"].str.strip():
     strain_map[strain] = strain
 
 # Map "stand_strain" in df to "Strain" using the mapping
-df["stand_strain_bin"] = df["stand_strain"].str.strip().map(strain_map)
+df["standardized_strain"] = df["stand_strain"].str.strip().map(strain_map)
 
 # print(df.loc[df["stand_strain_bin"].isna(), "stand_strain"].unique())
-print(f"{df['stand_strain_bin'].isna().sum()} removed.")
-df = df[~df["stand_strain_bin"].isna()]
+print(f"{df['standardized_strain'].isna().sum()} removed.")
+df = df[~df["standardized_strain"].isna()]
 
 df.to_csv(IN_CSV.with_name("postphase1_strainsMerged.csv"), index=False)
