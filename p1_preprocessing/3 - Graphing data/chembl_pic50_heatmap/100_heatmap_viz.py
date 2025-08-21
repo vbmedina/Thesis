@@ -1,9 +1,13 @@
+''' Description: Using the data from Step 2: pIC50 binning and average, this script uses a copy of the file 
+"pairings_center.csv" to generate a heatmap of the top 100 strain-molecule pairs in the whole ChEMBL dataset
+using a Representative pIC50. (reference: 2- pIC50 binning and average.py for more information on binning and averaging).'''
+
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 
 # File Path
-df_heatmap = pd.read_csv("./pairings_center.csv")
+df_heatmap = pd.read_csv("./p1_preprocessing/3 - Graphing data/chembl_pic50_heatmap/pairings_center_copy.csv")
 
 # Drop rows with missing Representative_pIC50
 df_heatmap_clean = df_heatmap.dropna(subset=["Representative_pIC50"])
@@ -35,4 +39,4 @@ plt.yticks(rotation=0)
 plt.tight_layout()
 
 
-plt.savefig("./top_100_pIC_hm.png", dpi=300)
+plt.savefig("./p1_preprocessing/3 - Graphing data/chembl_pic50_heatmap/top_100_pIC_hm.png", dpi=300)
