@@ -1,6 +1,24 @@
-import re
+''' Description: This script visualizes the relationship between molecular weight and AlogP through a scatter plot, with 
+points colored by pIC50 values and sized by the number of assay measurements per molecule. This analysis employs an 
+empirically-derived "FDA-Approved Drug-Like Zone" based on 11 FDA-approved antimalarial drugs from the FDA's Orange Book 
+database, establishing boundaries of MW between 250-530 Da and AlogP between 2.0-9.0 (1). Lipinski's Rule of Five (2) is not 
+used because antimalarial drugs exhibit distinct physicochemical profiles compared to typical oral drugs, including 
+higher molecular weights, increased lipophilicity, and enrichment in nitrogen-containing heteroaromatic rings - 
+properties that facilitate crossing multiple biological membranes and targeting the malaria parasite within infected 
+erythrocytes, justifying the use of this therapeutically-specific reference zone (3).
+
+References:
+1. FDA Orange Book: https://www.fda.gov/drugs/drug-approvals-and-databases/approved-drug-products-therapeutic-equivalence-evaluations-orange-book
+2. Lipinski et al. (2001): https://pubmed.ncbi.nlm.nih.gov/11259830/
+3. Burrows et al. (2013): https://pmc.ncbi.nlm.nih.gov/articles/PMC7948433/
+
+Requirements:
+1) final_data.csv - from Step 2 if pipeline.
+2) "mapped_resistance_flags.csv" - A pre-made mapping of flags to their groups. If using a different dataset,
+or updated dataset this file will need to be updated.
+'''
+
 import pandas as pd
-import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches

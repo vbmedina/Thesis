@@ -1,10 +1,22 @@
+''' Description: This script is used to generate a histogram of pIC50 distributions with activity thresholds, highlighting 
+inactive as >6.0, active as >=6.0 and <7.5, and high-potency as >=7.5. These activity thresholds align with established 
+ChEMBL-based antimalarial classification schemes, where pIC50 >= 6.0 represents the minimum threshold for biological activity 
+(1). 
+
+References: 
+1. pIC50 6.0 minimum threshold for biological activity: https://ieeexplore.ieee.org/abstract/document/10469118?casa_token=McAUgdGGNr0AAAAA:lJBsw0r76ODO4vqL-euLTiJYpqNVC8SbmQSOSbhjZZfGM8ExWeY84Ipoieem6uU2lwb9vN6b
+
+Requirements:
+1) final_data.csv - from Step 2 if pipeline.
+'''
+
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import cm, colors, patches, lines
 
 # Path
-csv_path = "./pp.csv"
+csv_path = "./p1_preprocessing/3 - Graphing data/pIC50_distribution_histogram/final_data_copy.csv"
 
 # Thresholds
 main_threshold = 6.0     
@@ -63,10 +75,8 @@ ax.set_title("pIC50 distribution with activity thresholds")
 
 # Save and Show
 plt.tight_layout()
-plt.savefig("./pic50_histogram.png", dpi=300)
-plt.show()
+plt.savefig("./p1_preprocessing/3 - Graphing data/pIC50_distribution_histogram/pic50_histogram.png", dpi=300)
 
 # Print summary
 print(f"Inactive: {inactive_count:,}, Active: {active_count:,}, High-potency: {high_count:,}")
-# Print thresholds
 print(f"Active threshold: {main_threshold}, High-potency threshold: {upper_threshold}")
