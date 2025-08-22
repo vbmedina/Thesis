@@ -15,7 +15,7 @@ import pandas as pd
 3. Create a new (temporary) column 'Flag resistance' to store the extracted flags.'''
 
 # Load the csv
-df = pd.read_csv("./p1_preprocessing/3 - Graphing data/drug_resistance/final_data_copy.csv")
+df = pd.read_csv("./p1_preprocessing/3 - Data visualizations before splits/drug_resistance/final_data_copy.csv")
 def flag_drug_resistance(description):
     description = description.lower()
     description = description.replace("-", " ")
@@ -45,7 +45,7 @@ print("Unique flags:", len(unique_flags))
 
 ''' Section 2. Used pre-made mapping in "mapped_resistance_flags.csv" to map the flags to their groups.'''
 # Load the mapping CSV
-flags = pd.read_csv("./p1_preprocessing/3 - Graphing data/drug_resistance/mapped_resistance_flags.csv")
+flags = pd.read_csv("./p1_preprocessing/3 - Data visualizations before splits/drug_resistance/mapped_resistance_flags.csv")
 
 # Map
 mapping= dict(zip(flags["Unique Flags"], flags["Flag Groups"]))
@@ -56,6 +56,6 @@ df['Flag Groups'] = df['Flag resistance'].map(mapping)
 df = df.drop(columns=['Flag resistance'])
 
 # Save the updated DataFrame with flag groups to a new CSV file
-df.to_csv("./p1_preprocessing/3 - Graphing data/drug_resistance/final_data_with_flags.csv", index=False)
+df.to_csv("./p1_preprocessing/3 - Data visualizations before splits/drug_resistance/final_data_with_flags.csv", index=False)
 
 print("File saved as 'csv_with_flags.csv'")
