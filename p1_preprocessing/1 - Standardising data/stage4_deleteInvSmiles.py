@@ -4,7 +4,8 @@ This script:
 
 Preconditions:
 1) "postphase3_Asexual_Only.csv" - generated from stage3 sexual filter
-2) "postphase3_Sexual_Only.csv" - generated from stage3 sexual filter'''
+2) "postphase3_Sexual_Only.csv" - generated from stage3 sexual filter
+'''
 
 # Imports
 import pandas as pd
@@ -23,7 +24,7 @@ for sexType in ["sexual", "asexual"]:
     else:
         # Sexual Data
         in_csv = Path("./p0_all_csvs/postphase3_Sexual_Only.csv")
-        out_fir = Path("./p2_models/sexual_test.csv")
+        out_fir = Path("./p0_all_csvs/sexual_test.csv")
         out_inv = Path("./p0_all_csvs/invalidSmiles_sexual_data.csv")
 
     # Load DataFrame 
