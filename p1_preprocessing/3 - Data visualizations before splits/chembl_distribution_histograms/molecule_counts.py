@@ -9,8 +9,7 @@ import pandas as pd
 from collections import Counter
 
 # Path
-path = "./p1_preprocessing/3 - Graphing data/chembl_distribution_histograms/final_data_copy.csv"
-
+path = "./p1_preprocessing/3 - Data visualizations before splits/chembl_distribution_histograms/final_data_copy.csv"
 data = pd.read_csv(path)
 
 print(data.columns)
@@ -31,7 +30,7 @@ else:
 molecule_counts_df = pd.DataFrame(molecule_counts.items(), columns=["Molecule", "Count"])
 
 # File path for the new CSV
-output_csv_path = "./p1_preprocessing/3 - Graphing data/chembl_distribution_histograms/molecule_counts.csv"
+output_csv_path = "./p1_preprocessing/3 - Data visualizations before splits/chembl_distribution_histograms/molecule_counts.csv"
 
 # Save the DF to a new CSV file
 molecule_counts_df.to_csv(output_csv_path, index=False)

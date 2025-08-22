@@ -17,7 +17,7 @@ from matplotlib.colors import TwoSlopeNorm
 
 # Top 50 Strains by Molecule Pairings (Non-Unique) ---------------------------------------------------------------
 # Load data
-strain_data = pd.read_csv("./p1_preprocessing/3 - Graphing data/chembl_distribution_histograms/strain_counts.csv")
+strain_data = pd.read_csv("./p1_preprocessing/3 - Data visualizations before splits/chembl_distribution_histograms/strain_counts.csv")
 
 # Sort top 50 strains
 top_strains = strain_data.nlargest(50, 'Count').sort_values(by='Count', ascending=False)
@@ -37,12 +37,12 @@ plt.title('Top 50 Strains with the Greatest Amount of pIC50 Scores in CHEMBL364 
 plt.tight_layout()
 
 # Save and display
-plt.savefig("./p1_preprocessing/3 - Graphing data/chembl_distribution_histograms/top_50_strains_heatmap.png", dpi=300)
+plt.savefig("./p1_preprocessing/3 - Data visualizations before splits/chembl_distribution_histograms/top_50_strains_heatmap.png", dpi=300)
 plt.show()
 
 # Top 50 Molecules by Strain Pairings (Non-Unique) ---------------------------------------------------------------
 # Load data
-molecule_data = pd.read_csv("./p1_preprocessing/3 - Graphing data/chembl_distribution_histograms/molecule_counts.csv")
+molecule_data = pd.read_csv("./p1_preprocessing/3 - Data visualizations before splits/chembl_distribution_histograms/molecule_counts.csv")
 
 # Sort top 50 molecules
 top_molecules = molecule_data.nlargest(50, 'Count').sort_values(by='Count', ascending=False)
@@ -62,12 +62,12 @@ plt.title('Top 50 Molecules with the Greatest Amount of pIC50 Scores in CHEMBL36
 plt.tight_layout()
 
 # Save and display
-plt.savefig("./p1_preprocessing/3 - Graphing data/chembl_distribution_histograms/top_50_molecules_heatmap.png", dpi=300)
+plt.savefig("./p1_preprocessing/3 - Data visualizations before splits/chembl_distribution_histograms/top_50_molecules_heatmap.png", dpi=300)
 plt.show()
 
 # Top 50 Molecules by Unique Strain Coverage ---------------------------------------------------------------
 # Load data
-pairings_data = pd.read_csv("./p1_preprocessing/3 - Graphing data/chembl_distribution_histograms/pairings_center_copy.csv")
+pairings_data = pd.read_csv("./p1_preprocessing/3 - Data visualizations before splits/chembl_distribution_histograms/pairings_center_copy.csv")
 
 # Calculate unique strains tested per molecule
 unique_strain_counts = (pairings_data.groupby('Molecule')['Strain'].nunique()
@@ -92,5 +92,5 @@ plt.title('Top 50 Molecules by Most Unique Strain Coverage in CHEMBL364 Dataset'
 plt.tight_layout()
 
 # Save and display
-plt.savefig("./p1_preprocessing/3 - Graphing data/chembl_distribution_histograms/molecules_unique_strain_coverage.png", dpi=300)
+plt.savefig("./p1_preprocessing/3 - Data visualizations before splits/chembl_distribution_histograms/molecules_unique_strain_coverage.png", dpi=300)
 plt.show()
