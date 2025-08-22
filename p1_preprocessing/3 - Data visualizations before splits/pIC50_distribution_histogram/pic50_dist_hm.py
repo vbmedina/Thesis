@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 from matplotlib import cm, colors, patches, lines
 
 # Path
-csv_path = "./p1_preprocessing/3 - Graphing data/pIC50_distribution_histogram/final_data_copy.csv"
+csv_path = "./p1_preprocessing/3 - Data visualizations before splits/pIC50_distribution_histogram/final_data_copy.csv"
 
 # Thresholds
 main_threshold = 6.0     
@@ -75,7 +75,7 @@ ax.set_title("pIC50 distribution with activity thresholds")
 
 # Save and Show
 plt.tight_layout()
-plt.savefig("./p1_preprocessing/3 - Graphing data/pIC50_distribution_histogram/pic50_histogram.png", dpi=300)
+plt.savefig("./p1_preprocessing/3 - Data visualizations before splits/pIC50_distribution_histogram/pIC50_histogram.png", dpi=300)
 
 # Print summary
 print(f"Inactive: {inactive_count:,}, Active: {active_count:,}, High-potency: {high_count:,}")

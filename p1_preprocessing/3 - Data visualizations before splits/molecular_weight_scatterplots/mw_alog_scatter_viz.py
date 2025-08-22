@@ -14,8 +14,6 @@ References:
 
 Requirements:
 1) final_data.csv - from Step 2 if pipeline.
-2) "mapped_resistance_flags.csv" - A pre-made mapping of flags to their groups. If using a different dataset,
-or updated dataset this file will need to be updated.
 '''
 
 import pandas as pd
@@ -24,7 +22,7 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 
 # 1) Load and prep data
-data_path = "./pp.csv"
+data_path = "./p1_preprocessing/3 - Data visualizations before splits/molecular_weight_scatterplots/final_data_copy.csv"
 data = pd.read_csv(data_path)
 molecule_counts = data["Molecule_ChEMBL_ID"]\
     .value_counts()\
@@ -106,7 +104,7 @@ plt.tight_layout()
 
 # Save
 plt.savefig(
-    "./mw_vs_alogp_scat_scaff.png",
+    "./p1_preprocessing/3 - Data visualizations before splits/molecular_weight_scatterplots/mw_vs_alogp_scat_scaff.png",
     format="png",
     bbox_inches="tight"
 )
