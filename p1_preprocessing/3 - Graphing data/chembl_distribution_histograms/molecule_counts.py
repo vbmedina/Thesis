@@ -1,5 +1,6 @@
 ''' Description: This script generates a CSV file containing the counts of unique molecules and their occurrences
 in a dataset, specifically focusing on the "Molecule_ChEMBL_ID" column.
+
 Preconditions:
 1) "final_data_copy.csv"
 '''

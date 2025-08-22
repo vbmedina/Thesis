@@ -5,7 +5,14 @@ pIC50 values from their mean and serves as an indicator of data variability and 
 sensitive to outliers and can be skewed by extreme values, this script uses RMSE as a diagnostic tool: when RMSE > 1 
 (indicating high variability likely due to outliers), it resorts to the median as a robust measure of center that is resistant 
 to extreme values. When RMSE <= 1 (indicating low variability with minimal outliers), it uses the mean as the most precise 
-estimate of central tendency using all available data points. '''
+estimate of central tendency using all available data points. 
+
+Preconditions:
+1) "pairing_IC50_pIC50.csv" - generated from stage 2 of the pipeline.
+2) "pairings_center.csv" - gnerated from stage 2 of the pipeline.
+'''
+
+
 
 import numpy as np
 import pandas as pd
