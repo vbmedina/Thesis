@@ -99,5 +99,5 @@ leg.get_frame().set_facecolor("white")
 leg.get_frame().set_edgecolor("#e5e7eb")
 
 plt.tight_layout()
-plt.savefig("./p1_preprocessing/3 - Data visualizations before splits/splits_data_visualization/splits_data_vis.png", dpi=300, bbox_inches="tight")
+plt.savefig("/Users/victoriamedina/Thesis_Project/thesis/p1_preprocessing/5 - Data visualizations after splits /splits_data_visualization/splits_data_vis.png", dpi=300, bbox_inches="tight")
 plt.show()
