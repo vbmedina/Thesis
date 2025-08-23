@@ -37,7 +37,7 @@ plt.title('Top 50 Strains with the Greatest Amount of pIC50 Scores in CHEMBL364 
 plt.tight_layout()
 
 # Save and display
-plt.savefig("./p1_preprocessing/3 - Data visualizations before splits/chembl_distribution_histograms/top_50_strains_heatmap.png", dpi=300)
+plt.savefig("./p1_preprocessing/3 - Data visualizations before splits/chembl_distribution_histograms/top_50_strains_histogram.png", dpi=300)
 plt.show()
 
 # Top 50 Molecules by Strain Pairings (Non-Unique) ---------------------------------------------------------------
@@ -62,7 +62,7 @@ plt.title('Top 50 Molecules with the Greatest Amount of pIC50 Scores in CHEMBL36
 plt.tight_layout()
 
 # Save and display
-plt.savefig("./p1_preprocessing/3 - Data visualizations before splits/chembl_distribution_histograms/top_50_molecules_heatmap.png", dpi=300)
+plt.savefig("./p1_preprocessing/3 - Data visualizations before splits/chembl_distribution_histograms/top_50_molecules_histogram.png", dpi=300)
 plt.show()
 
 # Top 50 Molecules by Unique Strain Coverage ---------------------------------------------------------------
