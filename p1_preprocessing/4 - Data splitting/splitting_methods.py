@@ -1,3 +1,35 @@
+"""
+Why these data splits?
+
+Virtual screening (VS) models are deployed on libraries whose chemistry is far from the training set. Random splits therefore 
+overestimate performance because many near-duplicates land in both train and test. Scaffold and Butina splits were meant to 
+fix this, but they still leak similarity: Bemis-Murcko scaffolds can differ by only one atom (nearly identical fingerprints), 
+and Butina often yields many singletons and weakly separated clusters.
+
+Following recent evidence on NCI-60 (≈33k molecules; 60 cell lines; 8,400 models), we include four splits to bracket realism:
+  • Random — optimistic baseline; highest test to train similarity (avg max Tanimoto ~0.72).
+  • Scaffold — groups by Bemis-Murcko core; still optimistic because different scaffolds can be
+    highly similar (avg max Tanimoto ~0.63).
+  • Butina — fingerprint clustering; more dissimilar than scaffold but clusters are noisy and
+    separation is modest (avg max Tanimoto ~0.42).
+  • UMAP clustering — reduce FP space (e.g., Morgan/Jaccard) with UMAP, then cluster (agglomerative
+    or HDBSCAN). Produces the largest distribution shift and most realistic, hardest benchmarks
+    (avg max Tanimoto ~0.38) and consistently lowers hit rates vs. easier splits.
+
+Takeaway: To approximate prospective VS (where you face novel, diverse chemistry), UMAP-based splits should be the primary 
+evaluation; Butina provides an intermediate difficulty; scaffold and random serve as optimistic baselines. We therefore 
+implement all four methods here to enable comparisons. In conjunction to the four splitting methods, and additional split was
+created using the algorithm HDBSCAN in conjuction with UMAP (2). I also add a small validation set by taking 10% of the 
+training pool to enable model selection.
+
+
+References (code/data in paper):
+1)“Comprehensive study showing UMAP > Butina > Scaffold > Random in realism and why ROC AUC can mislead virtual screenings: 
+https://jcheminf.biomedcentral.com/articles/10.1186/s13321-021-00576-2; 
+GitHub: https://github.com/Rong830/UMAP_split_for_VS archived in Zenodo: https://zenodo.org/records/14736486
+2) https://umap-learn.readthedocs.io/en/latest/faq.html
+"""
+
 # conda activate molml
 import pandas as pd
 import numpy as np
