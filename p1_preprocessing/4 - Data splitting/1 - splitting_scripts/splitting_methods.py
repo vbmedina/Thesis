@@ -77,8 +77,8 @@ RDLogger.DisableLog("rdApp.warning")
 # Settings
 SEED = 0
 np.random.seed(SEED)
-INPUTFILE = "/Users/victoriamedina/Thesis_Project/thesis/p2_models/data/tidy/pp_tidy.csv"
-OUTROOT  = Path("/Users/victoriamedina/Thesis_Project/thesis/p2_models/data/training")
+INPUTFILE = "./p1_preprocessing/4 - Data splitting/1 - splitting_scripts/final_data_copy.csv"
+OUTROOT  = Path("./p1_preprocessing/4 - Data splitting/2 - split_data")
 K = 5
 VAL_FRAC_TOTAL = 0.10
 ACTIVE_THRESHOLD = 6.0
