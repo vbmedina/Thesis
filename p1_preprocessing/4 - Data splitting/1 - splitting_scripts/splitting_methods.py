@@ -10,14 +10,14 @@ to study which splitting methods increase train-test dissimilarity.
 
 K-fold scheme and set sizes
 This script creates 5-fold cross-validation splits with train/val/test sets per fold. 
-In each fold:
+In each fold it aims to allocate:
   • Test = 1/5 of molecules (≈ 20%) held out for evaluation as a baseline and final model testing.
   • Validation = 10% of molecules from the remaining pool (80%). This set will be used for model selection and early stopping.
   • Train = 70% of molecules for fitting the model.
 
 This approach addresses the fundamental trade-off in machine learning with limited data: maximizing training data for model 
-learning while maintaining rigorous evaluation standards. Each fold uses 70% of molecules for training while reserving 20% as 
-a completely unseen test set. The 5-fold cross-validation framework reduces evaluation variance by ensuring every molecule 
+learning while maintaining rigorous evaluation standards. Each fold aims to bucket 70% of molecules into the training set, 10%
+into validation, and 20% to a test set.  The 5-fold cross-validation framework reduces evaluation variance by ensuring every molecule 
 serves as test data exactly once across folds. This method provides a comprehensive assessment of model performance across the 
 entire dataset rather than relying on a single, potentially biased train-test partition.
 
@@ -49,14 +49,14 @@ Implementation: All methods use established default parameters: Morgan fingerpri
 
 Dataset-specific constraints that guided this design -------------------------------------------------------------------
 Limited sample size: The 5-fold cross-validation approach reuses all data without test leakage, maximizing both training 
-    signal and evaluation coverage. 
+signal and evaluation coverage. 
 Strain imbalance: Half of all measurements are concentrated in a few common strains such as 3D7, K1, W2, and NF54. To prevent 
 the same molecular structure from appearing in both training and test sets via different strain measurements, we split by 
 molecule, keeping all data points for the same molecule within the same fold. 
-Class prevalence: While real virtual screenings typically have very low hit rates with many more inactive compounds, 
-    the ChEMBL dataset used here shows a more balanced distribution of activities across the pIC50 range. Rather than 
-    artificially forcing class imbalance, we rely on the increased difficulty of UMAP-based chemical splits and downstream 
-    evaluation using early-recognition metrics and top-k hit rates to create realistic evaluation scenarios.
+Class prevalence: While real virtual screening campaigns often have very low hit rates (many more inactives), this ChEMBL 
+    dataset shows a relatively balanced pIC50 distribution (with slightly more inactive molecules). This study has not
+    artificially force class imbalance in the splitting step. Instead, it approximates deployment difficulty via 
+    chemistry-aware splits.
 
 Outputs and QC
 For each split method and fold we write train/val/test CSVs and log:
@@ -231,7 +231,7 @@ def main():
     if not {"Smiles", "pIC50"}.issubset(df.columns):
         raise ValueError("CSV must contain Smiles and pIC50 columns.")
 
-    # DeepChem dataset: store SMILES in ids, pIC50 in y
+    # DeepChem dataset:
     y_arr = df["pIC50"].values.reshape(-1, 1)
     ds = dc.data.DiskDataset.from_numpy(
         X=np.zeros((len(df), 1)),
@@ -242,7 +242,15 @@ def main():
     # Map each SMILES to its row indices
     id2rows_all = build_id2rows(list(ds.ids))
 
-    # Precompute fingerprints for QC similarity
+    # Dataset of UNIQUE SMILES for molecule-level splitting
+    unique_smiles = np.array(sorted(id2rows_all.keys()))
+    ds_u = dc.data.DiskDataset.from_numpy(
+        X=np.zeros((len(unique_smiles), 1)),
+        y=np.zeros((len(unique_smiles), 1)),
+        ids=unique_smiles
+    )
+
+    # Precompute fingerprints for QC similarity (row-level)
     fps = [morgan_fp(s) for s in df["Smiles"]]
 
     # Per-split processing
@@ -251,20 +259,25 @@ def main():
         split_dir = OUTROOT / split_name
         split_dir.mkdir(exist_ok=True, parents=True)
 
-        base_folds = splitter(ds, k=K, seed=SEED)
+        # Split on UNIQUE SMILES rather than on rows
+        base_folds_u = splitter(ds_u, k=K, seed=SEED)
 
-        for f, (train_ds, test_ds) in enumerate(base_folds, start=1):
-            counters = defaultdict(int)
-            train_rows, counters = rows_for_subset(list(train_ds.ids), id2rows_all, counters)
-            test_rows,  counters = rows_for_subset(list(test_ds.ids),  id2rows_all, counters)
+        # Expand unique-SMILES folds back to ALL rows for those SMILES
+        for f, (train_u, test_u) in enumerate(base_folds_u, start=1):
 
-            # Validation: 10% of total rows
+            # rows for all occurrences of each SMILES
+            train_rows = np.concatenate([id2rows_all[s] for s in train_u.ids])
+            test_rows  = np.concatenate([id2rows_all[s] for s in test_u.ids])
+
+            # Validation: 10% of total rows, sampled by whole SMILES (keeps molecules intact)
             n_total = len(ds)
             desired_val = max(1, int(round(VAL_FRAC_TOTAL * n_total)))
             desired_val = min(desired_val, len(train_rows))
 
+            # Pass unique train SMILES so validation respects molecule grouping 
             final_train_rows, val_rows = choose_val_rows_by_smiles(
-                list(train_ds.ids), train_rows, desired_val, seed=SEED + f)
+                list(train_u.ids), train_rows, desired_val, seed=SEED + f
+            )
 
             # DataFrames for each set
             tr = df.loc[final_train_rows]
@@ -280,7 +293,7 @@ def main():
             qc_print(split_name, f, tr["pIC50"].values, vl["pIC50"].values, te["pIC50"].values,
                      ACTIVE_THRESHOLD, log)
 
-            # Mean max-Tanimoto on trest and train
+            # Mean max-Tanimoto on test and train
             tr_fps = [fps[i] for i in final_train_rows]
             if len(tr_fps) == 0:
                 mean_max = float("nan")
@@ -292,6 +305,7 @@ def main():
                 mean_max = float(np.mean(max_sims))
             line = f"    mean max-Tanimoto(test-train) = {mean_max:.3f}"
             print(line); log.append(line)
+
     log.append(f"Random seed: {SEED}")
     (OUTROOT / "split_stats.log").write_text("\n".join(log))
     print("\nAll folds written. QC in split_stats.log")

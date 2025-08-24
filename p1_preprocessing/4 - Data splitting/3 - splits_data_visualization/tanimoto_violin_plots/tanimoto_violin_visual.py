@@ -1,5 +1,4 @@
 # Conda activate molml 
-
 # Imports
 from pathlib import Path
 import numpy as np
@@ -7,28 +6,25 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 from matplotlib import cm
-
 from rdkit import Chem, DataStructs, RDLogger
-from rdkit.Chem import rdFingerprintGenerator as FPG
 from rdkit.Chem import AllChem
+from rdkit.Chem import rdFingerprintGenerator as FPG
 
 RDLogger.DisableLog("rdApp.warning")
 
 # Base directories
-PROJECT   = Path("/Users/victoriamedina/Thesis_Project/thesis/p2_models")
-DATA_ROOT = PROJECT / "data"
+PROJECT   = Path("./p1_preprocessing/4 - Data splitting")
+DATA_ROOT = PROJECT
 
-BASE_DIRS = [DATA_ROOT / "splits"] 
+BASE_DIRS = [DATA_ROOT / "2 - split_data"]
 SPLITS    = ["random", "scaffold", "butina", "umap_kmeans", "umap_ward"]
 FOLDS     = [1, 2, 3, 4, 5]
 SMI_COL   = "Smiles"
 
-# Using 1024 like in "create_chemical_splits"
 RADIUS = 2
 N_BITS = 2048
 USE_CHIRALITY = False
 
-# RDKit Morgan generator
 try:
     FP_GEN = FPG.GetMorganGenerator(
         radius=int(RADIUS),
@@ -47,16 +43,16 @@ except Exception as e:
 EXCLUDE_IDENTICAL = True  # drop exact SMILES matches when computing nearest train neighbor
 
 # Output
-FIG_DIR = DATA_ROOT / "figures"
-OUT_PNG = FIG_DIR / "max_tanimoto_violins_box_1024.png"
-STATS_CSV = FIG_DIR / "max_tanimoto_stats_1024.csv"
+FIG_DIR   = DATA_ROOT / "./3 - splits_data_visualization/tanimoto_violin_plots"
+OUT_PNG   = FIG_DIR / f"max_tanimoto_violins_box_{N_BITS}.png"
+STATS_CSV = FIG_DIR / f"max_tanimoto_stats_{N_BITS}.csv"
 
-# Helpers - Return SMILES if invalid
+# Helpers - Return canonical SMILES, None if invalid
 def canon(s: str) -> str | None:
     m = Chem.MolFromSmiles(str(s))
     return Chem.MolToSmiles(m, canonical=True) if m is not None else None
 
-# Helpers - Finding CSVs through naming scheme
+# Helpers - Find CSVs based on naming scheme
 def find_csv(base_dirs, split: str, fold: int, which: str) -> Path | None:
     for root in base_dirs:
         d = root / split
@@ -118,7 +114,7 @@ def main():
     df = pd.DataFrame(rows)
     df["max_tani"] = df["max_tani"].clip(0, 1)
 
-        # Stats for annotation
+    # Stats for annotation
     stats = (df.groupby("method")["max_tani"]
              .agg(p05=lambda x: x.quantile(0.05),
                   q1 =lambda x: x.quantile(0.25),
@@ -174,10 +170,10 @@ def main():
     # Labels
     ax.set_xlabel("Splitting Method")
     ax.set_ylabel("Max Tanimoto Similarity to Training Set")
-    ax.set_ylim(0, 1.2) # Edit line boundaries (upper limit > max tanimoto of 1)
+    ax.set_ylim(0, 1.2)  # upper limit > 1 to leave space for text labels
     ax.set_title("Train-Test Tanimoto by Split", pad=12)
 
-   # Annotate q1, q3, median, and 5th/95th percentile
+    # Annotate percentiles & median
     x_pos = {m: i for i, m in enumerate(order)}
     for _, r in stats.iterrows():
         m = r["method"]
@@ -200,7 +196,7 @@ def main():
         ax.hlines(p05, x+0.08, x+0.28, colors="black", linewidth=1.3)
         ax.text(x+0.35, p05, f"{p05:.2f}", ha="left",  va="center", fontsize=9)
 
-        # Q1 & Q3: small centered ticks (no labels to avoid clutter)
+        # Q1 & Q3 labels
         ax.hlines(q1, x-0.08, x-0.28, colors="black", linewidth=1.3)
         ax.text(x-0.35, q1, f"{q1:.2f}", ha="right", va="center", fontsize=9)
         ax.hlines(q3, x-0.08, x-0.28, colors="black", linewidth=1.3)

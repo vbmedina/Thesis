@@ -1,51 +1,51 @@
-[random | fold 1] train 27,738 | val  3,962 | test  7,924 | actives≥6.0 val: 2,323 test: 4,614
-    mean max-Tanimoto(test→train) = 0.903
-[random | fold 2] train 27,734 | val  3,965 | test  7,925 | actives≥6.0 val: 2,422 test: 4,652
-    mean max-Tanimoto(test→train) = 0.905
-[random | fold 3] train 27,736 | val  3,963 | test  7,925 | actives≥6.0 val: 2,170 test: 4,669
-    mean max-Tanimoto(test→train) = 0.904
-[random | fold 4] train 27,728 | val  3,971 | test  7,925 | actives≥6.0 val: 2,305 test: 4,656
-    mean max-Tanimoto(test→train) = 0.908
-[random | fold 5] train 27,737 | val  3,962 | test  7,925 | actives≥6.0 val: 2,314 test: 4,662
-    mean max-Tanimoto(test→train) = 0.906
-[scaffold | fold 1] train 27,733 | val  3,967 | test  7,924 | actives≥6.0 val: 2,279 test: 6,046
-    mean max-Tanimoto(test→train) = 0.657
-[scaffold | fold 2] train 27,736 | val  3,963 | test  7,925 | actives≥6.0 val: 2,175 test: 4,961
-    mean max-Tanimoto(test→train) = 0.625
-[scaffold | fold 3] train 26,821 | val  4,878 | test  7,925 | actives≥6.0 val: 3,349 test: 4,068
-    mean max-Tanimoto(test→train) = 0.610
-[scaffold | fold 4] train 27,737 | val  3,962 | test  7,925 | actives≥6.0 val: 2,285 test: 3,917
-    mean max-Tanimoto(test→train) = 0.593
-[scaffold | fold 5] train 27,735 | val  3,964 | test  7,925 | actives≥6.0 val: 2,376 test: 4,307
-    mean max-Tanimoto(test→train) = 0.605
-[butina | fold 1] train 27,737 | val  3,963 | test  7,924 | actives≥6.0 val: 1,888 test: 7,223
-    mean max-Tanimoto(test→train) = 0.620
-[butina | fold 2] train 27,736 | val  3,963 | test  7,925 | actives≥6.0 val: 1,974 test: 6,174
-    mean max-Tanimoto(test→train) = 0.519
-[butina | fold 3] train 27,736 | val  3,963 | test  7,925 | actives≥6.0 val: 2,265 test: 4,445
-    mean max-Tanimoto(test→train) = 0.494
-[butina | fold 4] train 27,735 | val  3,964 | test  7,925 | actives≥6.0 val: 2,363 test: 3,499
-    mean max-Tanimoto(test→train) = 0.469
-[butina | fold 5] train 27,736 | val  3,963 | test  7,925 | actives≥6.0 val: 2,560 test: 1,958
-    mean max-Tanimoto(test→train) = 0.396
-[umap_kmeans | fold 1] train 27,527 | val  3,964 | test  8,133 | actives≥6.0 val: 2,217 test: 4,812
-    mean max-Tanimoto(test→train) = 0.464
-[umap_kmeans | fold 2] train 23,038 | val  3,963 | test 12,623 | actives≥6.0 val: 2,413 test: 5,553
-    mean max-Tanimoto(test→train) = 0.412
-[umap_kmeans | fold 3] train 31,232 | val  3,963 | test  4,429 | actives≥6.0 val: 2,350 test: 3,585
-    mean max-Tanimoto(test→train) = 0.658
-[umap_kmeans | fold 4] train 29,741 | val  3,963 | test  5,920 | actives≥6.0 val: 2,104 test: 3,775
-    mean max-Tanimoto(test→train) = 0.533
-[umap_kmeans | fold 5] train 27,143 | val  3,962 | test  8,519 | actives≥6.0 val: 2,152 test: 5,575
-    mean max-Tanimoto(test→train) = 0.511
-[umap_ward | fold 1] train 23,762 | val  3,962 | test 11,900 | actives≥6.0 val: 2,142 test: 7,783
-    mean max-Tanimoto(test→train) = 0.491
-[umap_ward | fold 2] train 27,644 | val  3,980 | test  8,000 | actives≥6.0 val: 2,134 test: 4,870
-    mean max-Tanimoto(test→train) = 0.500
-[umap_ward | fold 3] train 30,972 | val  3,962 | test  4,690 | actives≥6.0 val: 2,204 test: 3,792
-    mean max-Tanimoto(test→train) = 0.635
-[umap_ward | fold 4] train 30,681 | val  4,066 | test  4,877 | actives≥6.0 val: 2,519 test: 3,088
-    mean max-Tanimoto(test→train) = 0.553
-[umap_ward | fold 5] train 25,504 | val  3,963 | test 10,157 | actives≥6.0 val: 2,500 test: 3,766
-    mean max-Tanimoto(test→train) = 0.376
-Random seed: 38573714
+[random | fold 1] train 28,349 | val  3,962 | test  7,313 | actives≥6.0 val: 2,265 test: 4,163
+    mean max-Tanimoto(test-train) = 0.737
+[random | fold 2] train 27,702 | val  3,962 | test  7,960 | actives≥6.0 val: 2,423 test: 4,685
+    mean max-Tanimoto(test-train) = 0.746
+[random | fold 3] train 26,432 | val  3,962 | test  9,230 | actives≥6.0 val: 2,287 test: 5,927
+    mean max-Tanimoto(test-train) = 0.789
+[random | fold 4] train 28,055 | val  3,962 | test  7,607 | actives≥6.0 val: 2,328 test: 4,292
+    mean max-Tanimoto(test-train) = 0.747
+[random | fold 5] train 28,148 | val  3,962 | test  7,514 | actives≥6.0 val: 2,261 test: 4,232
+    mean max-Tanimoto(test-train) = 0.731
+[scaffold | fold 1] train 25,897 | val  3,962 | test  9,765 | actives≥6.0 val: 2,395 test: 6,913
+    mean max-Tanimoto(test-train) = 0.635
+[scaffold | fold 2] train 28,733 | val  3,962 | test  6,929 | actives≥6.0 val: 2,618 test: 4,171
+    mean max-Tanimoto(test-train) = 0.676
+[scaffold | fold 3] train 28,285 | val  3,962 | test  7,377 | actives≥6.0 val: 2,696 test: 4,336
+    mean max-Tanimoto(test-train) = 0.659
+[scaffold | fold 4] train 27,959 | val  3,962 | test  7,703 | actives≥6.0 val: 2,712 test: 3,859
+    mean max-Tanimoto(test-train) = 0.579
+[scaffold | fold 5] train 27,812 | val  3,962 | test  7,850 | actives≥6.0 val: 2,681 test: 4,020
+    mean max-Tanimoto(test-train) = 0.578
+[butina | fold 1] train 25,291 | val  3,962 | test 10,371 | actives≥6.0 val: 2,477 test: 9,268
+    mean max-Tanimoto(test-train) = 0.612
+[butina | fold 2] train 28,465 | val  3,962 | test  7,197 | actives≥6.0 val: 3,193 test: 4,990
+    mean max-Tanimoto(test-train) = 0.532
+[butina | fold 3] train 29,150 | val  3,962 | test  6,512 | actives≥6.0 val: 3,338 test: 3,932
+    mean max-Tanimoto(test-train) = 0.501
+[butina | fold 4] train 29,209 | val  3,962 | test  6,453 | actives≥6.0 val: 3,320 test: 2,725
+    mean max-Tanimoto(test-train) = 0.489
+[butina | fold 5] train 26,571 | val  3,962 | test  9,091 | actives≥6.0 val: 3,343 test: 2,384
+    mean max-Tanimoto(test-train) = 0.393
+[umap_kmeans | fold 1] train 31,422 | val  3,962 | test  4,240 | actives≥6.0 val: 2,246 test: 2,670
+    mean max-Tanimoto(test-train) = 0.358
+[umap_kmeans | fold 2] train 23,071 | val  3,962 | test 12,591 | actives≥6.0 val: 2,797 test: 4,025
+    mean max-Tanimoto(test-train) = 0.336
+[umap_kmeans | fold 3] train 29,288 | val  3,962 | test  6,374 | actives≥6.0 val: 2,356 test: 4,127
+    mean max-Tanimoto(test-train) = 0.268
+[umap_kmeans | fold 4] train 24,144 | val  3,962 | test 11,518 | actives≥6.0 val: 1,915 test: 8,835
+    mean max-Tanimoto(test-train) = 0.426
+[umap_kmeans | fold 5] train 30,761 | val  3,962 | test  4,901 | actives≥6.0 val: 2,311 test: 3,642
+    mean max-Tanimoto(test-train) = 0.388
+[umap_ward | fold 1] train 17,753 | val  3,962 | test 17,909 | actives≥6.0 val: 1,973 test: 10,928
+    mean max-Tanimoto(test-train) = 0.383
+[umap_ward | fold 2] train 29,983 | val  3,962 | test  5,679 | actives≥6.0 val: 2,298 test: 3,945
+    mean max-Tanimoto(test-train) = 0.254
+[umap_ward | fold 3] train 28,172 | val  3,962 | test  7,490 | actives≥6.0 val: 2,555 test: 2,783
+    mean max-Tanimoto(test-train) = 0.340
+[umap_ward | fold 4] train 31,612 | val  3,962 | test  4,050 | actives≥6.0 val: 2,297 test: 2,379
+    mean max-Tanimoto(test-train) = 0.351
+[umap_ward | fold 5] train 31,166 | val  3,962 | test  4,496 | actives≥6.0 val: 2,360 test: 3,264
+    mean max-Tanimoto(test-train) = 0.363
+Random seed: 2858808528
