@@ -22,37 +22,41 @@ serves as test data exactly once across folds. This method provides a comprehens
 entire dataset rather than relying on a single, potentially biased train-test partition.
 
 Why five splitting methods?
-Random — Computationally efficient baseline that assigns data points to splits purely at random, without regard to the 
-    chemical similarity, diversity, or scaffold of molecules. As a results a carries higher probability of placing chemically 
-    similar compounds across train/test sets when compared to other methods chemically aware splitting methods.
-Scaffold (Bemis-Murcko) —  Extracts the Bemis-Murcko scaffold (core ring system) from each molecule and assigns all molecules 
-    sharing identical scaffolds to the same split, preventing scaffold leakage between train and test sets. However, this 
-    method treats structurally similar scaffolds as completely distinct and fails to account for molecules with different 
-    scaffolds that share similar pharmacophores or binding modes, allowing chemical similarity to persist across splits. 
-Butina (Tanimoto coefficient on Morgan fingerprints) — Creates clusters of molecules based on fingerprint similarity using a 
-    distance threshold, keeping structurally related compounds within the same split to reduce near-neighbor leakage compared 
-    to scaffold splitting. However, cluster quality depends heavily on the similarity threshold selection, and the method may 
+Random — Computationally efficient baseline that assigns data points to splits purely at random, without regard to the
+    chemical similarity, diversity, or scaffold of molecules. As a result, it carries a higher probability of placing chemically
+    similar compounds across train/test sets compared to other chemically aware splitting methods.
+Scaffold (Bemis-Murcko) — Extracts the Bemis-Murcko scaffold (core ring system) from each molecule and assigns all molecules
+    sharing identical scaffolds to the same split, preventing scaffold leakage between train and test sets. However, this
+    method treats structurally similar scaffolds as completely distinct and fails to account for molecules with different
+    scaffolds that share similar pharmacophores or binding modes, allowing chemical similarity to persist across splits.
+Butina (Tanimoto coefficient on Morgan fingerprints) — Creates clusters of molecules based on fingerprint similarity using a
+    distance threshold, keeping structurally related compounds within the same split to reduce near-neighbor leakage compared
+    to scaffold splitting. However, cluster quality depends heavily on the choice of similarity threshold, and the method may
     struggle with boundary cases where molecules fall near cluster edges or in sparse regions of chemical space.
 UMAP + K-means clustering — Applies UMAP dimensionality reduction to Morgan fingerprints using Jaccard distance, then performs
-    K-means clustering on the low-dimensional embedding to partition molecules into a predetermined number of groups. This 
-    approach creates compact, spherical clusters in the embedding space and provides deterministic cluster assignments, but 
-    requires pre-specifying the number of clusters and may struggle with irregular cluster shapes or varying cluster densities
+    K-means clustering on the low-dimensional embedding to partition molecules into a predetermined number of groups. This
+    approach creates compact, spherical clusters in the embedding space and provides deterministic cluster assignments, but
+    requires specifying the number of clusters and may struggle with irregular cluster shapes or varying cluster densities
     in chemical space.
-UMAP + Ward clustering — Applies UMAP dimensionality reduction to Morgan fingerprints using Jaccard distance, then performs 
-    hierarchical agglomerative clustering on the low-dimensional embedding to create chemically coherent groups. This two-step 
-    process preserves both local and global chemical relationships in the embedding space, yielding larger distribution shifts 
-    and more realistic test scenarios compared to simpler splitting methods. However, performance depends on UMAP 
-    hyperparameter tuning (n_neighbors, min_dist) and the choice of cluster cutoff in the resulting dendrogram.
+UMAP + Ward clustering — Applies UMAP dimensionality reduction to Morgan fingerprints using Jaccard distance, then performs
+    hierarchical agglomerative clustering on the low-dimensional embedding to create chemically coherent groups. This two-step
+    process preserves both local and global chemical relationships in the embedding space, yielding larger distribution shifts.
+     However, performance depends on UMAP hyperparameter tuning (n_neighbors, min_dist) and the method requires determining 
+     the final number of clusters from the hierarchical structure.
 
-Dataset-specific constraints that guided this design
-• Limited sample size: a single, large hold-out would waste data; 5-fold CV reuses data
-  efficiently without test leakage.
-• Strain imbalance: ~½ of measurements are concentrated in a few strains (e.g., 3D7/K1/W2/NF54),
-  so we split **by molecule (SMILES)** and keep all measurements for the same molecule in the
-  same fold to avoid “the same structure in train and test via different strains.”
-• Class prevalence: real VS has tiny hit rates (many more negatives), but ChEMBL here is not
-  extremely skewed (see the pIC50 histogram). Rather than force artificial imbalance, we rely on
-  harder chemistry splits (UMAP-based) and, downstream, early-recognition metrics/top-k hit rate.
+Implementation: All methods use established default parameters: Morgan fingerprints (radius=2, 2048 bits), Butina cutoff=0.6,
+ UMAP (n_neighbors=25, min_dist=0.1, Jaccard metric), and pIC50 ≥ 6.0 activity threshold.
+
+Dataset-specific constraints that guided this design -------------------------------------------------------------------
+Limited sample size: The 5-fold cross-validation approach reuses all data without test leakage, maximizing both training 
+    signal and evaluation coverage. 
+Strain imbalance: Half of all measurements are concentrated in a few common strains such as 3D7, K1, W2, and NF54. To prevent 
+the same molecular structure from appearing in both training and test sets via different strain measurements, we split by 
+molecule, keeping all data points for the same molecule within the same fold. 
+Class prevalence: While real virtual screenings typically have very low hit rates with many more inactive compounds, 
+    the ChEMBL dataset used here shows a more balanced distribution of activities across the pIC50 range. Rather than 
+    artificially forcing class imbalance, we rely on the increased difficulty of UMAP-based chemical splits and downstream 
+    evaluation using early-recognition metrics and top-k hit rates to create realistic evaluation scenarios.
 
 Outputs and QC
 For each split method and fold we write train/val/test CSVs and log:
@@ -72,6 +76,8 @@ GitHub: https://github.com/Rong830/UMAP_split_for_VS archived in Zenodo: https:/
 import pandas as pd
 import numpy as np
 from pathlib import Path
+from collections import defaultdict
+from typing import Dict, List, Tuple
 import deepchem as dc
 from rdkit import Chem, DataStructs, RDLogger
 from rdkit.Chem import AllChem
@@ -80,11 +86,14 @@ import umap
 
 RDLogger.DisableLog("rdApp.warning")
 
-# Settings
-SEED = 0
-np.random.seed(SEED)
+# Input/Output files
 INPUTFILE = "./p1_preprocessing/4 - Data splitting/1 - splitting_scripts/final_data_copy.csv"
 OUTROOT  = Path("./p1_preprocessing/4 - Data splitting/2 - split_data")
+
+# Settings
+SEED = np.random.randint(1, 10000000000)
+print(f"Random seed: {SEED}")
+np.random.seed(SEED)
 K = 5
 VAL_FRAC_TOTAL = 0.10
 ACTIVE_THRESHOLD = 6.0
@@ -118,7 +127,7 @@ def split_scaffold(ds, k, seed):
 def split_butina(ds, k, seed, cutoff=0.6):
     return dc.splits.ButinaSplitter(cutoff).k_fold_split(ds, k=k, seed=seed)
 
-# UMAP (+ k-means) block
+# UMAP (+ k-means)
 def split_umap_kmeans(ds, k, seed):
     smiles = ds.ids
     fps = [morgan_fp(s) for s in smiles]
@@ -134,12 +143,12 @@ def split_umap_kmeans(ds, k, seed):
     folds = []
     n_all = len(ds)
     for f in range(k):
-        test_idx  = np.where(labels == f)[0]
+        test_idx = np.where(labels == f)[0]
         train_idx = np.setdiff1d(np.arange(n_all), test_idx)
         folds.append((ds.select(train_idx), ds.select(test_idx)))
     return folds
 
-# UMAP (+ Ward) block
+# UMAP (+ Ward)
 def split_umap_ward(ds, k, seed):
     smiles = ds.ids
     fps = [morgan_fp(s) for s in smiles]
@@ -162,28 +171,57 @@ def split_umap_ward(ds, k, seed):
 
 # Split registry
 SPLITS = {
-    "random"      : split_random,
-    "scaffold"    : split_scaffold,
-    "butina"      : split_butina,
+    "random" : split_random,
+    "scaffold" : split_scaffold,
+    "butina" : split_butina,
     "umap_kmeans" : split_umap_kmeans,
-    "umap_ward"   : split_umap_ward,
+    "umap_ward" : split_umap_ward,
 }
 
-# 10% validation set (of the whole dataset) from train pool
-def add_validation(ds_all, train_ds, test_ds, seed, val_frac_total=0.10):
-    n_total = len(ds_all)
-    desired_val = max(1, int(round(val_frac_total * n_total)))
+# Helpers for non-unique SMILES
+def build_id2rows(ids: List[str]) -> Dict[str, np.ndarray]:
+    id2rows = defaultdict(list)
+    for i, s in enumerate(ids):
+        id2rows[s].append(i)
+    return {s: np.asarray(ix, dtype=int) for s, ix in id2rows.items()}
 
-    id2row = {smi: i for i, smi in enumerate(ds_all.ids)}
+def rows_for_subset(subset_ids: List[str],
+                    id2rows: Dict[str, np.ndarray],
+                    counters: Dict[str, int] = None) -> Tuple[np.ndarray, Dict[str, int]]:
+    if counters is None:
+        counters = defaultdict(int)
+    out = np.empty(len(subset_ids), dtype=int)
+    for j, s in enumerate(subset_ids):
+        k = counters[s]
+        if k >= len(id2rows[s]):
+            raise IndexError( f"Subset expects more occurrences of SMILES {s!r} "
+                              f"({k+1}) than exist in the full dataset ({len(id2rows[s])}).")
+        out[j] = id2rows[s][k]
+        counters[s] = k + 1
+    return out, counters
 
-    train_idx_pool = np.array([id2row[s] for s in train_ds.ids], dtype=int)
+def choose_val_rows_by_smiles(train_ids: List[str], train_rows: np.ndarray, desired_val_rows: int,
+                              seed: int) -> Tuple[np.ndarray, np.ndarray]:
+    # Group assigned TRAIN rows by SMILES
+    smi2rows = defaultdict(list)
+    for s, r in zip(train_ids, train_rows):
+        smi2rows[s].append(int(r))
+
     rng = np.random.RandomState(seed)
-    val_idx = rng.choice(train_idx_pool, size=desired_val, replace=False)
-    final_train_idx = np.setdiff1d(train_idx_pool, val_idx)
+    smiles = list(smi2rows.keys())
+    rng.shuffle(smiles)
 
-    return ds_all.select(final_train_idx), ds_all.select(val_idx), test_ds
+    val_rows_list = []
+    for s in smiles:
+        val_rows_list.extend(smi2rows[s])
+        if len(val_rows_list) >= desired_val_rows:
+            break
 
-# Main funct
+    val_rows = set(val_rows_list)
+    final_train_rows = [r for r in train_rows if int(r) not in val_rows]
+    return np.asarray(final_train_rows, dtype=int), np.asarray(sorted(val_rows), dtype=int)
+
+# Main loop
 def main():
     OUTROOT.mkdir(parents=True, exist_ok=True)
     log = []
@@ -192,7 +230,7 @@ def main():
     if not {"Smiles", "pIC50"}.issubset(df.columns):
         raise ValueError("CSV must contain Smiles and pIC50 columns.")
 
-    # DeepChem dataset (store SMILES in ids, pIC50 in y)
+    # DeepChem dataset: store SMILES in ids, pIC50 in y (row-level dataset)
     y_arr = df["pIC50"].values.reshape(-1, 1)
     ds = dc.data.DiskDataset.from_numpy(
         X=np.zeros((len(df), 1)),
@@ -200,28 +238,47 @@ def main():
         ids=df["Smiles"].values
     )
 
-    # Precompute fingerprints for QC similarity
+    # Map each SMILES to its row indices
+    id2rows_all = build_id2rows(list(ds.ids))
+
+    # NEW: dataset of unique SMILES for molecule-level splitting (guarantees no SMILES in both train & test)
+    unique_smiles = np.array(sorted(id2rows_all.keys()))
+    ds_u = dc.data.DiskDataset.from_numpy(
+        X=np.zeros((len(unique_smiles), 1)),
+        y=np.zeros((len(unique_smiles), 1)),
+        ids=unique_smiles
+    )
+
+    # Precompute fingerprints for QC similarity (row-level)
     fps = [morgan_fp(s) for s in df["Smiles"]]
-    id2row = dict(zip(df["Smiles"], df.index))
 
-    def ds_to_df(dset):
-        rows = [id2row[s] for s in dset.ids]
-        return df.loc[rows]
-
-    # Saving splits
+    # Per-split processing
     for split_name, splitter in SPLITS.items():
         print(f"\n=== {split_name.upper()} (k={K}) ===")
         split_dir = OUTROOT / split_name
-        split_dir.mkdir(exist_ok=True)
+        split_dir.mkdir(exist_ok=True, parents=True)
 
-        base_folds = splitter(ds, k=K, seed=SEED)
+        # Split on UNIQUE SMILES
+        base_folds_u = splitter(ds_u, k=K, seed=SEED)
 
-        for f, (train_ds, test_ds) in enumerate(base_folds, start=1):
-            train_ds, val_ds, test_ds = add_validation(
-                ds, train_ds, test_ds, seed=SEED + f, val_frac_total=VAL_FRAC_TOTAL
+        for f, (train_u, test_u) in enumerate(base_folds_u, start=1):
+            # Expand unique-SMILES folds back to ALL rows for those SMILES
+            train_rows = np.concatenate([id2rows_all[s] for s in train_u.ids])
+            test_rows  = np.concatenate([id2rows_all[s] for s in test_u.ids])
+
+            # Validation: 10% of total rows, sampled by whole SMILES (keeps molecules intact)
+            n_total = len(ds)
+            desired_val = max(1, int(round(VAL_FRAC_TOTAL * n_total)))
+            desired_val = min(desired_val, len(train_rows))
+
+            final_train_rows, val_rows = choose_val_rows_by_smiles(
+                list(train_u.ids), train_rows, desired_val, seed=SEED + f
             )
 
-            tr, vl, te = ds_to_df(train_ds), ds_to_df(val_ds), ds_to_df(test_ds)
+            # DataFrames for each set
+            tr = df.loc[final_train_rows]
+            vl = df.loc[val_rows]
+            te = df.loc[test_rows]
 
             # Save CSVs
             (split_dir / f"{split_name}_fold_{f}_train.csv").write_text(tr.to_csv(index=False))
@@ -229,18 +286,23 @@ def main():
             (split_dir / f"{split_name}_fold_{f}_test.csv").write_text(te.to_csv(index=False))
 
             # QC sizes
-            qc_print(split_name, f, tr["pIC50"], vl["pIC50"], te["pIC50"],
+            qc_print(split_name, f, tr["pIC50"].values, vl["pIC50"].values, te["pIC50"].values,
                      ACTIVE_THRESHOLD, log)
 
-            # Mean max-Tanimoto(test-train)
-            tr_fps = [fps[id2row[s]] for s in train_ds.ids]
-            max_sims = []
-            for s in test_ds.ids:
-                sims = DataStructs.BulkTanimotoSimilarity(fps[id2row[s]], tr_fps)
-                max_sims.append(max(sims))
-            line = f"    mean max-Tanimoto(test→train) = {np.mean(max_sims):.3f}"
+            # Mean max-Tanimoto on test and train
+            tr_fps = [fps[i] for i in final_train_rows]
+            if len(tr_fps) == 0:
+                mean_max = float("nan")
+            else:
+                max_sims = []
+                for i in test_rows:
+                    sims = DataStructs.BulkTanimotoSimilarity(fps[i], tr_fps)
+                    max_sims.append(max(sims) if len(sims) else 0.0)
+                mean_max = float(np.mean(max_sims))
+            line = f"    mean max-Tanimoto(test-train) = {mean_max:.3f}"
             print(line); log.append(line)
 
+    log.append(f"Random seed: {SEED}")
     (OUTROOT / "split_stats.log").write_text("\n".join(log))
     print("\nAll folds written. QC in split_stats.log")
 

@@ -8,10 +8,10 @@ from matplotlib.lines import Line2D
 
 # Directories
 BASE = Path("p2_models/data/splits")
-METHODS = ["random","scaffold","butina","umap","umap_hdb"]
+METHODS = ["random","scaffold","butina","umap_kmeans","umap_ward"]
 FOLDS = [1,2,3,4,5]
 SMI_COL = "Smiles"
-N_BITS, RADIUS = 1024, 2
+N_BITS, RADIUS = 2048, 2
 OUT = Path("p2_models/data/figures/split_folds_embedding.png")
 
 # Helper for finding csv;s

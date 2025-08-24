@@ -19,13 +19,13 @@ PROJECT   = Path("/Users/victoriamedina/Thesis_Project/thesis/p2_models")
 DATA_ROOT = PROJECT / "data"
 
 BASE_DIRS = [DATA_ROOT / "splits"] 
-SPLITS    = ["random", "scaffold", "butina", "umap", "umap_hdb"]
+SPLITS    = ["random", "scaffold", "butina", "umap_kmeans", "umap_ward"]
 FOLDS     = [1, 2, 3, 4, 5]
 SMI_COL   = "Smiles"
 
 # Using 1024 like in "create_chemical_splits"
 RADIUS = 2
-N_BITS = 1024
+N_BITS = 2048
 USE_CHIRALITY = False
 
 # RDKit Morgan generator
