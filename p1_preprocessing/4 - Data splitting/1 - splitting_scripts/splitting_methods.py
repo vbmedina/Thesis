@@ -78,6 +78,7 @@ import numpy as np
 from pathlib import Path
 from collections import defaultdict
 from typing import Dict, List, Tuple
+
 import deepchem as dc
 from rdkit import Chem, DataStructs, RDLogger
 from rdkit.Chem import AllChem
@@ -177,7 +178,6 @@ SPLITS = {
     "umap_kmeans" : split_umap_kmeans,
     "umap_ward" : split_umap_ward,
 }
-
 # Helpers for non-unique SMILES
 def build_id2rows(ids: List[str]) -> Dict[str, np.ndarray]:
     id2rows = defaultdict(list)
@@ -194,14 +194,15 @@ def rows_for_subset(subset_ids: List[str],
     for j, s in enumerate(subset_ids):
         k = counters[s]
         if k >= len(id2rows[s]):
-            raise IndexError( f"Subset expects more occurrences of SMILES {s!r} "
-                              f"({k+1}) than exist in the full dataset ({len(id2rows[s])}).")
+            raise IndexError( f"Subset expects more occurrences of SMILES {s!r} " 
+                            f"({k+1}) than exist in the full dataset ({len(id2rows[s])}).")
         out[j] = id2rows[s][k]
         counters[s] = k + 1
     return out, counters
 
 def choose_val_rows_by_smiles(train_ids: List[str], train_rows: np.ndarray, desired_val_rows: int,
                               seed: int) -> Tuple[np.ndarray, np.ndarray]:
+
     # Group assigned TRAIN rows by SMILES
     smi2rows = defaultdict(list)
     for s, r in zip(train_ids, train_rows):
@@ -230,7 +231,7 @@ def main():
     if not {"Smiles", "pIC50"}.issubset(df.columns):
         raise ValueError("CSV must contain Smiles and pIC50 columns.")
 
-    # DeepChem dataset: store SMILES in ids, pIC50 in y (row-level dataset)
+    # DeepChem dataset: store SMILES in ids, pIC50 in y
     y_arr = df["pIC50"].values.reshape(-1, 1)
     ds = dc.data.DiskDataset.from_numpy(
         X=np.zeros((len(df), 1)),
@@ -241,15 +242,7 @@ def main():
     # Map each SMILES to its row indices
     id2rows_all = build_id2rows(list(ds.ids))
 
-    # NEW: dataset of unique SMILES for molecule-level splitting (guarantees no SMILES in both train & test)
-    unique_smiles = np.array(sorted(id2rows_all.keys()))
-    ds_u = dc.data.DiskDataset.from_numpy(
-        X=np.zeros((len(unique_smiles), 1)),
-        y=np.zeros((len(unique_smiles), 1)),
-        ids=unique_smiles
-    )
-
-    # Precompute fingerprints for QC similarity (row-level)
+    # Precompute fingerprints for QC similarity
     fps = [morgan_fp(s) for s in df["Smiles"]]
 
     # Per-split processing
@@ -258,22 +251,20 @@ def main():
         split_dir = OUTROOT / split_name
         split_dir.mkdir(exist_ok=True, parents=True)
 
-        # Split on UNIQUE SMILES
-        base_folds_u = splitter(ds_u, k=K, seed=SEED)
+        base_folds = splitter(ds, k=K, seed=SEED)
 
-        for f, (train_u, test_u) in enumerate(base_folds_u, start=1):
-            # Expand unique-SMILES folds back to ALL rows for those SMILES
-            train_rows = np.concatenate([id2rows_all[s] for s in train_u.ids])
-            test_rows  = np.concatenate([id2rows_all[s] for s in test_u.ids])
+        for f, (train_ds, test_ds) in enumerate(base_folds, start=1):
+            counters = defaultdict(int)
+            train_rows, counters = rows_for_subset(list(train_ds.ids), id2rows_all, counters)
+            test_rows,  counters = rows_for_subset(list(test_ds.ids),  id2rows_all, counters)
 
-            # Validation: 10% of total rows, sampled by whole SMILES (keeps molecules intact)
+            # Validation: 10% of total rows
             n_total = len(ds)
             desired_val = max(1, int(round(VAL_FRAC_TOTAL * n_total)))
             desired_val = min(desired_val, len(train_rows))
 
             final_train_rows, val_rows = choose_val_rows_by_smiles(
-                list(train_u.ids), train_rows, desired_val, seed=SEED + f
-            )
+                list(train_ds.ids), train_rows, desired_val, seed=SEED + f)
 
             # DataFrames for each set
             tr = df.loc[final_train_rows]
@@ -289,7 +280,7 @@ def main():
             qc_print(split_name, f, tr["pIC50"].values, vl["pIC50"].values, te["pIC50"].values,
                      ACTIVE_THRESHOLD, log)
 
-            # Mean max-Tanimoto on test and train
+            # Mean max-Tanimoto on trest and train
             tr_fps = [fps[i] for i in final_train_rows]
             if len(tr_fps) == 0:
                 mean_max = float("nan")
@@ -301,7 +292,6 @@ def main():
                 mean_max = float(np.mean(max_sims))
             line = f"    mean max-Tanimoto(test-train) = {mean_max:.3f}"
             print(line); log.append(line)
-
     log.append(f"Random seed: {SEED}")
     (OUTROOT / "split_stats.log").write_text("\n".join(log))
     print("\nAll folds written. QC in split_stats.log")
