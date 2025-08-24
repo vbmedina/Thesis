@@ -33,10 +33,16 @@ Butina (Tanimoto coefficient on Morgan fingerprints) — Creates clusters of mol
     distance threshold, keeping structurally related compounds within the same split to reduce near-neighbor leakage compared 
     to scaffold splitting. However, cluster quality depends heavily on the similarity threshold selection, and the method may 
     struggle with boundary cases where molecules fall near cluster edges or in sparse regions of chemical space.
-# UMAP + Ward — embed Morgan bits with UMAP (Jaccard), then agglomerative clustering; yields a
-#     larger, more coherent distribution shift and a harder, more realistic test.
-# UMAP + HDBSCAN — density-based variant on the same embedding to capture irregular shapes and
-#     outlier regions; complementary to Ward.
+UMAP + K-means clustering — Applies UMAP dimensionality reduction to Morgan fingerprints using Jaccard distance, then performs
+    K-means clustering on the low-dimensional embedding to partition molecules into a predetermined number of groups. This 
+    approach creates compact, spherical clusters in the embedding space and provides deterministic cluster assignments, but 
+    requires pre-specifying the number of clusters and may struggle with irregular cluster shapes or varying cluster densities
+    in chemical space.
+UMAP + Ward clustering — Applies UMAP dimensionality reduction to Morgan fingerprints using Jaccard distance, then performs 
+    hierarchical agglomerative clustering on the low-dimensional embedding to create chemically coherent groups. This two-step 
+    process preserves both local and global chemical relationships in the embedding space, yielding larger distribution shifts 
+    and more realistic test scenarios compared to simpler splitting methods. However, performance depends on UMAP 
+    hyperparameter tuning (n_neighbors, min_dist) and the choice of cluster cutoff in the resulting dendrogram.
 
 Dataset-specific constraints that guided this design
 • Limited sample size: a single, large hold-out would waste data; 5-fold CV reuses data
@@ -84,11 +90,11 @@ VAL_FRAC_TOTAL = 0.10
 ACTIVE_THRESHOLD = 6.0
 
 # Fingerprint helpers
-def morgan_fp(smi, r=2, nBits=1024):
+def morgan_fp(smi, r=2, nBits=2048):
     m = Chem.MolFromSmiles(smi)
     return AllChem.GetMorganFingerprintAsBitVect(m, r, nBits)
 
-def fp_to_numpy(fp, nBits=1024):
+def fp_to_numpy(fp, nBits=2048):
     arr = np.zeros((nBits,), dtype=np.int8)
     DataStructs.ConvertToNumpyArray(fp, arr)
     return arr
