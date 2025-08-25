@@ -9,13 +9,13 @@ from lightning.pytorch.loggers import TensorBoardLogger
 from chemprop import data, featurizers, models, nn
 
 # Config
-ALL_SPLITS = ["random", "scaffold", "butina", "umap", "umap_hdb"]
-p2models_dir = Path.home() / "Thesis/p2_models"
-BASE_SPLITS_DIR = p2models_dir / "data" / "splits"
-BASE_OUT_DIR = p2models_dir / "models" / "checkpoints"
+ALL_SPLITS = ["random", "scaffold", "butina", "umap_kmeans", "umap_ward"]
+p2models_dir = Path.home() / "p2_models"
+BASE_SPLITS_DIR = p2models_dir / "input_data" / "split_data"
+BASE_OUT_DIR = p2models_dir / "models" 
 
 # Sexual Test Data
-EXTERNAL_TEST_CSV = p2models_dir / "data" / "splits" / "sexual_test.csv"
+EXTERNAL_TEST_CSV = p2models_dir / "input_data" / "sexual_test.csv"
 
 # Inputs
 SMILES_COL = "Smiles"
@@ -73,7 +73,7 @@ def save_pred_plot(trainer, model, loader, df_true, out_png, split_name: str, fo
 
     ax.set_xlim(lo, hi); ax.set_ylim(lo, hi)
     ax.set_xlabel("True pIC50"); ax.set_ylabel("Predicted pIC50")
-    ax.set_title(f"True vs Predicted Values on {dataset_label}: {split_name.upper()} Fold {fold}")
+    ax.set_title(f"True vs Predicted Values on {dataset_label}: {split_name.upper()} Fold {fold}", pad=15, fontsize=10)
     ax.grid(True, linestyle=":", alpha=0.25)
     ax.legend(loc="best", frameon=True, facecolor="white", framealpha=0.95)
     fig.tight_layout(); fig.savefig(out_png, dpi=300); plt.close(fig)
