@@ -2,3 +2,5 @@ potency_str.csv
 potency.csv
 .venv
 .conda
+*.OU
+*.ER
