@@ -3,7 +3,7 @@ Chemprop (D-MPNN) Early Stopping Visualization
 
 In Chemprop's D-MPNN, early stopping watches the validation metric. It keeps the best-so-far checkpoint (lowest validation 
 loss or highest val score). If the validation metric doesn't improve in patience epochs, training stops, and the model 
-restores the best checkpoint. Then it will evaluate the test set once with the restored model.
+restores the best checkpoint. Then it will evaluate the test set once with the restored model. (1)
 
 What this figure shows:
 - Loss curve on synthetic data.
