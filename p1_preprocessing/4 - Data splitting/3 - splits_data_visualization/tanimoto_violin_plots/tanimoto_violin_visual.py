@@ -1,3 +1,11 @@
+''' Description: This script generates violin and box plots to visualize the distribution of maximum Tanimoto similarities
+between test molecules and their nearest neighbors in the training set across different data splitting methods and folds.
+
+Preconditions:
+1) "split_data" directory with subdirectories for each splitting method containing CSV files for folds 1-5 from step 2 
+"Data splitting"
+'''
+
 # Conda activate molml 
 # Imports
 from pathlib import Path

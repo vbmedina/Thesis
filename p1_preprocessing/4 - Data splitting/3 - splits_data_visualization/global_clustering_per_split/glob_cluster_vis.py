@@ -1,3 +1,11 @@
+''' Description: This script generates a visualization of the global clustering of test molecules across different data splits
+and folds using UMAP on ECFP4 fingerprints.
+
+Preconditions:
+1) "split_data" 
+2) random, scaffold, butina, umap_kmeans, umap_ward csv files for folds 1-5 from step 2 in "Data splitting"
+'''
+
 from pathlib import Path
 import numpy as np, pandas as pd
 from rdkit import Chem, DataStructs
@@ -7,12 +15,12 @@ from scipy.spatial import ConvexHull
 from matplotlib.lines import Line2D 
 
 # Directories
-BASE = Path("p2_models/data/splits")
+BASE = Path("./p1_preprocessing/4 - Data splitting/2 - split_data")
 METHODS = ["random","scaffold","butina","umap_kmeans","umap_ward"]
 FOLDS = [1,2,3,4,5]
 SMI_COL = "Smiles"
 N_BITS, RADIUS = 2048, 2
-OUT = Path("p2_models/data/figures/split_folds_embedding.png")
+OUT = Path("./p1_preprocessing/4 - Data splitting/3 - splits_data_visualization/global_clustering_per_split/split_folds_embedding.png")
 
 # Helper for finding csv;s
 def find_file(dirp, method, fold, split):
@@ -109,8 +117,7 @@ legend_handles = [
            marker='o', linestyle='None', markersize=10,
            markerfacecolor=palette[f-1], markeredgecolor=palette[f-1],
            label=f"Fold {f}")
-    for f in FOLDS
-]
+    for f in FOLDS]
 
 # Legend
 fig.legend(
@@ -124,11 +131,10 @@ fig.legend(
     handletextpad=0.2,
     labelspacing=0.5,
     prop={"size": 12},
-    title_fontsize=14
-)
+    title_fontsize=14)
 
 
-# Overall figure
+# Suptitle, layout, save
 fig.suptitle("Molecular distribution for each fold under different splits", y=0.98, fontsize=20)
 plt.tight_layout(rect=[0, 0, 0.90, 0.99])
 OUT.parent.mkdir(parents=True, exist_ok=True)

@@ -1,5 +1,5 @@
 """
-Data Split Graphic, illustrates:
+This script generates a graphic which illustrates an overview of the data splitting method used:
 - 5 splits (K = 1, 2, 3, 4, 5)
 - Each split shows 5 equal blocks (each 20% of total data)
 - The designated test block shifts from block 5 down to 1 across K fold

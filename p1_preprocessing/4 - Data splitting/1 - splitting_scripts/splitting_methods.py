@@ -5,7 +5,7 @@ validation, and test sets.
 Goal:
 Build chemically realistic cross-validation folds for virtual screening evaluation on ChEMBL P. falciparum IC50 data 
 (~40k pIC50 values for ~20k molecules). Study which splitting methods increase train-test dissimilarity to better reflect 
-real-world prospective screening scenarios where models encounter molecules unlike those in training data.
+real-world prospective screening scenarios where models encounter molecules unlike those in training data. (1)
 
 K-fold scheme and set sizes
 This script creates 5-fold cross-validation splits with train/val/test sets per fold. 
@@ -22,25 +22,25 @@ the consistency and robustness of each splitting method.
 Why five splitting methods?
 Random — Computationally efficient baseline that assigns data points to splits purely at random, without regard to the
     chemical similarity, diversity, or scaffold of molecules. As a result, it carries a higher probability of placing chemically
-    similar compounds across train/test sets compared to other chemically aware splitting methods.
+    similar compounds across train/test sets compared to other chemically aware splitting methods. (2)
 Scaffold (Bemis-Murcko) — Extracts the Bemis-Murcko scaffold (core ring system) from each molecule and assigns all molecules
     sharing identical scaffolds to the same split, preventing scaffold leakage between train and test sets. However, this
     method treats structurally similar scaffolds as completely distinct and fails to account for molecules with different
-    scaffolds that share similar pharmacophores or binding modes, allowing chemical similarity to persist across splits.
+    scaffolds that share similar pharmacophores or binding modes, allowing chemical similarity to persist across splits. (1)(3)
 Butina (Tanimoto coefficient on Morgan fingerprints) — Creates clusters of molecules based on fingerprint similarity using a
     distance threshold, keeping structurally related compounds within the same split to reduce near-neighbor leakage compared
     to scaffold splitting. However, cluster quality depends heavily on the choice of similarity threshold, and the method may
-    struggle with boundary cases where molecules fall near cluster edges or in sparse regions of chemical space.
+    struggle with boundary cases where molecules fall near cluster edges or in sparse regions of chemical space. (1)(3)
 UMAP + K-means clustering — Applies UMAP dimensionality reduction to Morgan fingerprints using Jaccard distance, then performs
     K-means clustering on the low-dimensional embedding to partition molecules into a predetermined number of groups. This
     approach creates compact, spherical clusters in the embedding space and provides deterministic cluster assignments, but
     requires specifying the number of clusters and may struggle with irregular cluster shapes or varying cluster densities
-    in chemical space.
+    in chemical space. (1)(2)(4)
 UMAP + Ward clustering — Applies UMAP dimensionality reduction to Morgan fingerprints using Jaccard distance, then performs
     hierarchical agglomerative clustering on the low-dimensional embedding to create chemically coherent groups. This two-step
     process preserves both local and global chemical relationships in the embedding space, yielding larger distribution shifts.
      However, performance depends on UMAP hyperparameter tuning (n_neighbors, min_dist) and the method requires determining 
-     the final number of clusters from the hierarchical structure.
+     the final number of clusters from the hierarchical structure. (2)(4)
 
 All methods use established default parameters: Morgan fingerprints (radius=2, 2048 bits), Butina cutoff=0.6, 
 UMAP (n_neighbors=25, min_dist=0.1, Jaccard metric), and pIC50 ≥ 6.0 activity threshold.
@@ -51,24 +51,25 @@ Dataset-specific constraints that guided this design:
 - Multiple strain measurements: When the same molecule has been tested across multiple strains, all of their measurements are 
     kept in the same fold, allowing models to learn from the full biological activity profile of each compound and make robust 
     predictions despite inherent experimental variability. This reflects real-world scenarios where compounds show activity 
-    variation across conditions
+    variation across conditions.
 - Class prevalence: While real virtual screening campaigns often have very low hit rates (many more inactives), this ChEMBL 
     dataset shows a relatively balanced pIC50 distribution (with slightly more inactive molecules). This study has not
     artificially force class imbalance in the splitting step. Instead, it approximates deployment difficulty via 
-    chemistry-aware splits.
+    chemistry-aware splits. (5)
 
 Outputs and quality control for each split method and fold:
 - Files: train/val/test CSVs per fold
 - Logging: Set sizes, active counts (pIC50 ≥ 6.0), mean max-Tanimoto(test→train) as difficulty metric
-- Expected ranking: Random < Scaffold < Butina < UMAP+K-means < UMAP+Ward (increasing difficulty)
+- Expected ranking: Random < Scaffold < Butina < UMAP+K-means < UMAP+Ward
 
 References (code/data in paper):
-1)“Comprehensive study showing UMAP > Butina > Scaffold > Random in realism and why ROC AUC can mislead virtual screenings: 
-https://jcheminf.biomedcentral.com/articles/10.1186/s13321-021-00576-2; 
-GitHub: https://github.com/Rong830/UMAP_split_for_VS archived in Zenodo: https://zenodo.org/records/14736486
+1)“Comprehensive study showing UMAP > Butina > Scaffold > Random in realism of train-test splits for virtual screening”
+https://jcheminf.biomedcentral.com/articles/10.1186/s13321-025-01039-8; 
 2) https://github.com/rdkit
-3) https://umap-learn.readthedocs.io/en/latest/faq.html
-4) https://arxiv.org/pdf/2406.00873
+3) https://arxiv.org/pdf/2406.00873
+4) https://umap-learn.readthedocs.io/en/latest/faq.html
+5) https://pubs.acs.org/doi/10.1021/acsmedchemlett.4c00093
+
 """
 
 # conda activate molml
