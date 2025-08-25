@@ -1,25 +1,23 @@
 """
-Description: This script uses random, scaffold, Butina, UMAP and UMAP with HDBSCAN as splitting methods to create training, 
-validation, and test sets.
-Dataset: ChEMBL 364 P. Falciparum IC50s (~40k pIC50 values for ~20k molecules)
+Description: This script uses random, scaffold, Butina, UMAP (k-mean) and UMAP (ward) as splitting methods to create training, 
+validation, and test sets. 
 
 Goal:
-Build chemically realistic cross-validation folds for virtual screening style evaluation on the ChEMBL set. Prospective 
-screens used on real-world data, encounter molecules unlike those found in training chemistry, therefore this experiment aims 
-to study which splitting methods increase train-test dissimilarity.
+Build chemically realistic cross-validation folds for virtual screening evaluation on ChEMBL P. falciparum IC50 data 
+(~40k pIC50 values for ~20k molecules). Study which splitting methods increase train-test dissimilarity to better reflect 
+real-world prospective screening scenarios where models encounter molecules unlike those in training data.
 
 K-fold scheme and set sizes
 This script creates 5-fold cross-validation splits with train/val/test sets per fold. 
 In each fold it aims to allocate:
   • Test = 1/5 of molecules (≈ 20%) held out for evaluation as a baseline and final model testing.
-  • Validation = 10% of molecules from the remaining pool (80%). This set will be used for model selection and early stopping.
+  • Validation = 10% of molecules from the remaining pool (80%), and is used for model selection and early stopping.
   • Train = 70% of molecules for fitting the model.
 
-This approach addresses the fundamental trade-off in machine learning with limited data: maximizing training data for model 
-learning while maintaining rigorous evaluation standards. Each fold aims to bucket 70% of molecules into the training set, 10%
-into validation, and 20% to a test set.  The 5-fold cross-validation framework reduces evaluation variance by ensuring every molecule 
-serves as test data exactly once across folds. This method provides a comprehensive assessment of model performance across the 
-entire dataset rather than relying on a single, potentially biased train-test partition.
+The fundamental trade-off between maximizing training data and maintaining rigorous evaluation standards. This approach 
+prevents the same molecular structure from appearing in both training and test sets within each fold by keeping all strain 
+measurements of a molecule together, while the 5-fold framework provides multiple independent train/test partitions to assess 
+the consistency and robustness of each splitting method.
 
 Why five splitting methods?
 Random — Computationally efficient baseline that assigns data points to splits purely at random, without regard to the
@@ -44,32 +42,33 @@ UMAP + Ward clustering — Applies UMAP dimensionality reduction to Morgan finge
      However, performance depends on UMAP hyperparameter tuning (n_neighbors, min_dist) and the method requires determining 
      the final number of clusters from the hierarchical structure.
 
-Implementation: All methods use established default parameters: Morgan fingerprints (radius=2, 2048 bits), Butina cutoff=0.6,
- UMAP (n_neighbors=25, min_dist=0.1, Jaccard metric), and pIC50 ≥ 6.0 activity threshold.
+All methods use established default parameters: Morgan fingerprints (radius=2, 2048 bits), Butina cutoff=0.6, 
+UMAP (n_neighbors=25, min_dist=0.1, Jaccard metric), and pIC50 ≥ 6.0 activity threshold.
 
-Dataset-specific constraints that guided this design -------------------------------------------------------------------
-Limited sample size: The 5-fold cross-validation approach reuses all data without test leakage, maximizing both training 
-signal and evaluation coverage. 
-Strain imbalance: Half of all measurements are concentrated in a few common strains such as 3D7, K1, W2, and NF54. To prevent 
-the same molecular structure from appearing in both training and test sets via different strain measurements, we split by 
-molecule, keeping all data points for the same molecule within the same fold. 
-Class prevalence: While real virtual screening campaigns often have very low hit rates (many more inactives), this ChEMBL 
+Dataset-specific constraints that guided this design:
+- Limited sample size: The 5-fold cross-validation approach reuses all data without test leakage, maximizing both training 
+    signal and evaluation coverage. 
+- Multiple strain measurements: When the same molecule has been tested across multiple strains, all of their measurements are 
+    kept in the same fold, allowing models to learn from the full biological activity profile of each compound and make robust 
+    predictions despite inherent experimental variability. This reflects real-world scenarios where compounds show activity 
+    variation across conditions
+- Class prevalence: While real virtual screening campaigns often have very low hit rates (many more inactives), this ChEMBL 
     dataset shows a relatively balanced pIC50 distribution (with slightly more inactive molecules). This study has not
     artificially force class imbalance in the splitting step. Instead, it approximates deployment difficulty via 
     chemistry-aware splits.
 
-Outputs and QC
-For each split method and fold we write train/val/test CSVs and log:
-  • set sizes and active counts at pIC50 ≥ 6.0
-  • mean max-Tanimoto(test→train) as a leakage/difficulty check (lower is harder)
+Outputs and quality control for each split method and fold:
+- Files: train/val/test CSVs per fold
+- Logging: Set sizes, active counts (pIC50 ≥ 6.0), mean max-Tanimoto(test→train) as difficulty metric
+- Expected ranking: Random < Scaffold < Butina < UMAP+K-means < UMAP+Ward (increasing difficulty)
 
 References (code/data in paper):
 1)“Comprehensive study showing UMAP > Butina > Scaffold > Random in realism and why ROC AUC can mislead virtual screenings: 
 https://jcheminf.biomedcentral.com/articles/10.1186/s13321-021-00576-2; 
 GitHub: https://github.com/Rong830/UMAP_split_for_VS archived in Zenodo: https://zenodo.org/records/14736486
 2) https://github.com/rdkit
-2) https://umap-learn.readthedocs.io/en/latest/faq.html
-3) https://arxiv.org/pdf/2406.00873
+3) https://umap-learn.readthedocs.io/en/latest/faq.html
+4) https://arxiv.org/pdf/2406.00873
 """
 
 # conda activate molml

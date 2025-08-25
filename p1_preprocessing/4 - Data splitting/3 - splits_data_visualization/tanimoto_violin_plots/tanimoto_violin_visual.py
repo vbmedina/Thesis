@@ -73,7 +73,10 @@ def main():
 
     # Build distributions on all splits/folds
     for sp in SPLITS:
+        print(f"Processing split: {sp}")
         for fold in FOLDS:
+            print(f"  Fold {fold}")
+            # Find CSVs
             tr_path = find_csv(BASE_DIRS, sp, fold, "train")
             te_path = find_csv(BASE_DIRS, sp, fold, "test")
             if tr_path is None or te_path is None:
