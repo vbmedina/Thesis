@@ -1,3 +1,37 @@
+'''
+Description: Train and evaluate Chemprop MPNN models for pIC50 across multiple data-split strategies,
+then summarize metrics and save diagnostic plots.
+
+Requirements:
+- Split CSVs from Data Splitting preprocessing step: "~/p2_models/input_data/split_data/{split}" with required columns: 
+    "Smiles", "pIC50"
+- External test set: "~/p2_models/input_data/sexual_test.csv" taken from Standardising Data preprocessing step: 
+    "~/p0_all_csvs/" with required columns: "Smiles", "pIC50"
+
+WHAT HAPPENS
+1) For each split in ["random", "scaffold", "butina", "umap_kmeans", "umap_ward"]
+   and each fold i=1..5:
+   a. Load train/val/test CSVs; also load the fixed external test set.
+   b. Featurize molecules with Chemprop's SimpleMoleculeMolGraphFeaturizer.
+   c. Normalize targets using the TRAIN set's scaler; apply the same scaler to val/test/external.
+      (Predictions are unscaled back to the original pIC50 space via an UnscaleTransform.)
+   d. Build a Chemprop DMPNN: BondMessagePassing → MeanAggregation → RegressionFFN,
+      with metrics RMSE/MSE/MAE.
+   e. Train with PyTorch Lightning:
+        - Early stopping on "val/rmse" (patience=15)
+        - Checkpoint the best model (min val/rmse)
+   f. Evaluate the best checkpoint on the fold TEST set and on the EXTERNAL set.
+   g. Save scatter plots of True vs Predicted pIC50 (with linear fit, R^2, RMSE)
+      and a CSV with per-molecule predictions.sets.
+
+OUTPUTS (per split and fold)
+Directory: ~/p2_models/models/<split>/fold_<i>/
+    * best.ckpt (Lightning checkpoint) and last.ckpt
+    * TensorBoard logs (view with: tensorboard --logdir ~/p2_models/models/<split>)
+    * pred_vs_true_fold_test.png / .csv
+    * pred_vs_true_sexual_data.png / .csv
+'''
+
 from pathlib import Path
 import pandas as pd
 import numpy as np
