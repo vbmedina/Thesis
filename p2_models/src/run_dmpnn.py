@@ -8,7 +8,7 @@ Requirements:
 - External test set: "~/p2_models/input_data/sexual_test.csv" taken from Standardising Data preprocessing step: 
     "~/p0_all_csvs/" with required columns: "Smiles", "pIC50"
 
-WHAT HAPPENS
+Procedure:
 1) For each split in ["random", "scaffold", "butina", "umap_kmeans", "umap_ward"]
    and each fold i=1..5:
    a. Load train/val/test CSVs; also load the fixed external test set.
