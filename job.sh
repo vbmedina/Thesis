@@ -8,6 +8,6 @@
 source ${HOME}/.bashrc
 conda activate /rds/general/user/vbm24/home/Thesis/.conda/dmpnn
  
-cd /rds/general/user/vbm24/home/Thesis/p2_models/models
+cd /rds/general/user/vbm24/home/Thesis/p2_models/src
 
 python second_dmpnn.py
