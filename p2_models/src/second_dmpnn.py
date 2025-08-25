@@ -11,7 +11,7 @@ from chemprop import data, featurizers, models, nn
 # Config
 ALL_SPLITS = ["random", "scaffold", "butina", "umap_kmeans", "umap_ward"]
 p2models_dir = Path.home() / "Thesis" / "p2_models"
-BASE_SPLITS_DIR = p2models_dir / "input_data" / "split_data"
+BASE_SPLITS_DIR = p2models_dir / "input_data" / "split_data" 
 BASE_OUT_DIR = p2models_dir / "models" 
 
 # Sexual Test Data

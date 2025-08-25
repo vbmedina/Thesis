@@ -13,7 +13,7 @@ from chemprop import data, featurizers, models, nn
 SPLIT = "umap"  # or: "random", "scaffold", "butina", "umap_hdb"
 
 # Directory to splits
-p2models_dir = Path.home() / "Thesis/p2_models"
+p2models_dir = Path.home() / "Thesis" / "p2_models"
 SPLIT_DIR = p2models_dir / "data" / "splits" / SPLIT
 OUTPUTDIR = p2models_dir / "models" / "checkpoints" / SPLIT
 OUTPUTDIR.mkdir(parents=True, exist_ok=True)
