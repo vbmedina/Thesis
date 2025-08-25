@@ -1,3 +1,6 @@
+# Not required! 
+# This script add potency bins, frequency counts, check duplicates
+
 from pathlib import Path
 import pandas as pd
 
@@ -5,7 +8,7 @@ import pandas as pd
 inputcsv  = Path("./pp.csv")
 outputcsv = Path("./pp_tidy.csv")
 essentials = ["Smiles", "Strains", "pIC50"] 
-# ---------------------------------------------------------------------------
+
 def main() -> None:
     # Load
     if not inputcsv.exists():
@@ -34,8 +37,6 @@ def main() -> None:
     dup_count = dup_mask.sum()
     if dup_count:
         print(f"Warning: {dup_count} duplicated molecule-strain rows kept.")
-        # Optional: uncomment next line to drop duplicates, keeping first
-        # df = df[~dup_mask]
 
     # Save
     df.to_csv(outputcsv, index=False)
