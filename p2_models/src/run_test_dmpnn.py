@@ -42,9 +42,9 @@ class Config:
     target_col: str = TARGET_COL
     threshold: float = THRESHOLD
 
-# Helpers for finding paths to best.ckpt
+# Helpers for finding paths to best-v1.ckpt
 def discover_splits_and_folds(base_root: Path) -> Dict[str, List[int]]:
-    """Find all <split>/fold_<n>/best.ckpt under <base_root>/models."""
+    """Find all <split>/fold_<n>/best-v1.ckpt under <base_root>/models."""
     models_root = base_root / "models"
     if not models_root.exists():
         raise FileNotFoundError(f"Missing models dir: {models_root}")
@@ -105,7 +105,7 @@ def build_dataset_from_mols(df: pd.DataFrame, smiles_col: str, target_col: str):
     dpoints = []
     for mol, yv in zip(mols, y):
         tgt = [float(yv)] if pd.notna(yv) else [None]
-        dpoints.append(MoleculeDatapoint([mol], tgt))
+        dpoints.append(MoleculeDatapoint(mol, tgt))
     return MoleculeDataset(dpoints), mask
 
 def make_dataloader(dset, shuffle=False, num_workers=NUM_WORKERS):
@@ -196,7 +196,7 @@ def main():
         models_dir = cfg.base_root / "models" / split
         for fold in folds:
             fold_dir = models_dir / f"fold_{fold}"
-            ckpt = fold_dir / "best.ckpt"
+            ckpt = fold_dir / "best-v1.ckpt"
             print(f"  - fold {fold}: {ckpt}")
 
             # Data
