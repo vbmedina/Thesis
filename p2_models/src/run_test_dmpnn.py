@@ -15,7 +15,7 @@ from rdkit import Chem
 
 # CPU-only settings & paths
 DEVICE = torch.device("cpu") 
-BASE_ROOT = Path("/rds/general/user/vbm24/home/Thesis/p2_models").expanduser()
+BASE_ROOT = Path("./p2_models").expanduser()
 EXTERNAL_CSV = BASE_ROOT / "input_data" / "sexual_test.csv"
 OUT_DIR_NAME = "analysis_outputs"
 SMILES_COL = "Smiles"
@@ -23,6 +23,14 @@ TARGET_COL = "pIC50"
 THRESHOLD = 6.0
 NUM_WORKERS = 0
 SEED = 1337
+
+TARGET_MODELS = {
+    "random":      1,
+    "scaffold":    1,
+    "butina":      2,
+    "umap_kmeans": 1,
+    "umap_ward":   5,
+}
 
 # Config
 @dataclass
@@ -45,12 +53,12 @@ def discover_splits_and_folds(base_root: Path) -> Dict[str, List[int]]:
     for split_dir in sorted(p for p in models_root.iterdir() if p.is_dir()):
         split = split_dir.name
         folds: List[int] = []
-        for fd in sorted(split_dir.glob("fold_*")):
+        for fd in sorted(split_dir.glob(f"fold_{TARGET_MODELS[split]}")):
             m = re.fullmatch(r"fold_(\d+)", fd.name)
             if not m:
                 continue
             fold_num = int(m.group(1))
-            if (fd / "best.ckpt").exists():
+            if (fd / "best-v1.ckpt").exists():
                 folds.append(fold_num)
         if folds:
             splits[split] = sorted(folds)
@@ -97,7 +105,7 @@ def build_dataset_from_mols(df: pd.DataFrame, smiles_col: str, target_col: str):
     dpoints = []
     for mol, yv in zip(mols, y):
         tgt = [float(yv)] if pd.notna(yv) else [None]
-        dpoints.append(MoleculeDatapoint(mol, tgt))
+        dpoints.append(MoleculeDatapoint([mol], tgt))
     return MoleculeDataset(dpoints), mask
 
 def make_dataloader(dset, shuffle=False, num_workers=NUM_WORKERS):
