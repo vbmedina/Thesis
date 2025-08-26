@@ -1,35 +1,28 @@
 '''
-Description: Train and evaluate Chemprop MPNN models for pIC50 across multiple data-split strategies,
-then summarize metrics and save diagnostic plots.
+Description: This script trains and validate Chemprop DMPNN model for pIC50 across multiple data-split strategies while saving 
+best ad last checkpoints.
 
 Requirements:
-- Split CSVs from Data Splitting preprocessing step: "~/p2_models/input_data/split_data/{split}" with required columns: 
+    * Split CSVs from Data Splitting preprocessing step: "~/p2_models/input_data/split_data/{split}" with required columns:
     "Smiles", "pIC50"
-- External test set: "~/p2_models/input_data/sexual_test.csv" taken from Standardising Data preprocessing step: 
-    "~/p0_all_csvs/" with required columns: "Smiles", "pIC50"
 
 Procedure:
 1) For each split in ["random", "scaffold", "butina", "umap_kmeans", "umap_ward"]
    and each fold i=1..5:
-   a. Load train/val/test CSVs; also load the fixed external test set.
+   a. Load train/val CSVs.
    b. Featurize molecules with Chemprop's SimpleMoleculeMolGraphFeaturizer.
-   c. Normalize targets using the TRAIN set's scaler; apply the same scaler to val/test/external.
+   c. Normalize targets using the TRAIN set's scaler; apply the same scaler to val.
       (Predictions are unscaled back to the original pIC50 space via an UnscaleTransform.)
-   d. Build a Chemprop DMPNN: BondMessagePassing → MeanAggregation → RegressionFFN,
+   d. Build a Chemprop DMPNN: BondMessagePassing to MeanAggregation to RegressionFFN,
       with metrics RMSE/MSE/MAE.
    e. Train with PyTorch Lightning:
         - Early stopping on "val/rmse" (patience=15)
         - Checkpoint the best model (min val/rmse)
-   f. Evaluate the best checkpoint on the fold TEST set and on the EXTERNAL set.
-   g. Save scatter plots of True vs Predicted pIC50 (with linear fit, R^2, RMSE)
-      and a CSV with per-molecule predictions.sets.
 
 OUTPUTS (per split and fold)
 Directory: ~/p2_models/models/<split>/fold_<i>/
     * best.ckpt (Lightning checkpoint) and last.ckpt
     * TensorBoard logs (view with: tensorboard --logdir ~/p2_models/models/<split>)
-    * pred_vs_true_fold_test.png / .csv
-    * pred_vs_true_sexual_data.png / .csv
 '''
 
 from pathlib import Path
@@ -39,17 +32,17 @@ import torch
 import matplotlib.pyplot as plt
 from lightning import pytorch as pl
 from lightning.pytorch.callbacks import ModelCheckpoint, EarlyStopping
-from lightning.pytorch.loggers import TensorBoardLogger
+from lightning.pytorch.loggers import TensorBoardLogger, CSVLogger  # <-- added
 from chemprop import data, featurizers, models, nn
+from sklearn import metrics
+from scipy.stats import spearmanr
+import shutil
 
 # Config
 ALL_SPLITS = ["random", "scaffold", "butina", "umap_kmeans", "umap_ward"]
 p2models_dir = Path.home() / "Thesis" / "p2_models"
-BASE_SPLITS_DIR = p2models_dir / "input_data" / "split_data" 
-BASE_OUT_DIR = p2models_dir / "models" 
-
-# Sexual Test Data
-EXTERNAL_TEST_CSV = p2models_dir / "input_data" / "sexual_test.csv"
+BASE_SPLITS_DIR = p2models_dir / "input_data" / "split_data"
+BASE_OUT_DIR = p2models_dir / "models"
 
 # Inputs
 SMILES_COL = "Smiles"
@@ -61,8 +54,7 @@ MAX_EPOCHS = 200
 PATIENCE = 15
 use_gpu = torch.cuda.is_available()
 
-# Helpers
-# Finding file paths
+# ----------------- helpers (existing) -----------------
 def find_file(split_dir: Path, split: str, i: int, kind: str) -> Path:
     for name in (f"{split}_fold_{i}_{kind}.csv", f"{split}_fold{i}_{kind}.csv"):
         p = split_dir / name
@@ -74,96 +66,103 @@ def to_points(df):
     return [data.MoleculeDatapoint.from_smi(s, y)
             for s, y in zip(df[SMILES_COL].values, df[TARGET_COLS].values)]
 
-def pull_rmse(d):
-    for k, v in d.items():
-        if "rmse" in k.lower():
-            return float(v)
-    return np.nan
-
-# Ploting True vs Predicted Values per fold
-def save_pred_plot(trainer, model, loader, df_true, out_png, split_name: str, fold: int, dataset_label: str):
+# Metrics helpers
+def _predict_flat(trainer: pl.Trainer, model, loader, ckpt_path=None) -> np.ndarray:
+    """Robust predict -> flat numpy array (works for dict/tensor/tuple outputs)."""
     with torch.no_grad():
-        preds_batches = trainer.predict(model=model, dataloaders=loader, ckpt_path="best")
-    y_hat = np.concatenate([p.detach().cpu().numpy().ravel() for p in preds_batches])
-    y_true = df_true["pIC50"].to_numpy().ravel()
+        outs = trainer.predict(model=model, dataloaders=loader, ckpt_path=ckpt_path)
+    flats = []
+    for o in outs:
+        x = o
+        if isinstance(x, dict):
+            for k in ("y_hat", "preds", "y_pred", "pred", "logits", "output", "out"):
+                if k in x:
+                    x = x[k]; break
+            else:
+                x = next(iter(x.values()))
+        if isinstance(x, (list, tuple)):
+            x = x[0]
+        x = torch.as_tensor(x).detach().cpu().numpy()
+        flats.append(np.ravel(x))
+    return np.concatenate(flats, axis=0)
 
-    # fit + stats
-    m, b = np.polyfit(y_true, y_hat, 1)
-    r = np.corrcoef(y_true, y_hat)[0, 1]
-    r2 = float(r * r)
-    rmse = float(np.sqrt(np.mean((y_hat - y_true) ** 2)))
+def _regression_metrics(y_true: np.ndarray, y_pred: np.ndarray) -> dict:
+    y_true = np.asarray(y_true, float).ravel()
+    y_pred = np.asarray(y_pred, float).ravel()
+    mse = float(metrics.mean_squared_error(y_true, y_pred))
+    rmse = float(np.sqrt(mse))
+    mae = float(metrics.mean_absolute_error(y_true, y_pred))
+    r2  = float(metrics.r2_score(y_true, y_pred))
+    rho, _ = spearmanr(y_true, y_pred)
+    return {"rmse": rmse, "mae": mae, "mse": mse, "r2": r2, "spearman_rho": float(rho), "n": int(len(y_true))}
 
-    lo = float(min(y_true.min(), y_hat.min()))
-    hi = float(max(y_true.max(), y_hat.max()))
-    xline = np.linspace(lo, hi, 100)
+def evaluate_and_save(trainer: pl.Trainer,
+                      model,
+                      train_set,
+                      val_set,
+                      df_train: pd.DataFrame,
+                      df_val: pd.DataFrame,
+                      ckpt_path: str,
+                      out_csv_path: Path):
+    train_loader_eval = data.build_dataloader(train_set, num_workers=NUM_WORKERS, shuffle=False)
+    val_loader_eval   = data.build_dataloader(val_set,   num_workers=NUM_WORKERS, shuffle=False)
 
-    fig, ax = plt.subplots(figsize=(5, 5), dpi=170)
-    ax.scatter(y_true, y_hat, s=14, alpha=0.6, color="#d92525", marker="o",
-               linewidths=0, edgecolors="none",
-               label=f"Data (n={len(y_true):,}, RMSE={rmse:.3f})")
-    ax.plot(xline, m * xline + b, color="black", lw=2,
-            label=f"Fit: y = {m:.2f}x + {b:.2f}  (R²={r2:.3f})")
-    ax.plot([lo, hi], [lo, hi], color="0.6", lw=1.25, ls="--", label="Ideal: y = x")
+    y_pred_train = _predict_flat(trainer, model, train_loader_eval, ckpt_path=ckpt_path)
+    y_pred_val   = _predict_flat(trainer, model, val_loader_eval,   ckpt_path=ckpt_path)
 
-    ax.set_xlim(lo, hi); ax.set_ylim(lo, hi)
-    ax.set_xlabel("True pIC50"); ax.set_ylabel("Predicted pIC50")
-    ax.set_title(f"True vs Predicted Values on {dataset_label}: {split_name.upper()} Fold {fold}", pad=15, fontsize=10)
-    ax.grid(True, linestyle=":", alpha=0.25)
-    ax.legend(loc="best", frameon=True, facecolor="white", framealpha=0.95)
-    fig.tight_layout(); fig.savefig(out_png, dpi=300); plt.close(fig)
+    y_true_train = df_train[TARGET_COLS].to_numpy().ravel()
+    y_true_val   = df_val[TARGET_COLS].to_numpy().ravel()
 
-    pd.DataFrame({"Smiles": df_true[SMILES_COL], "y_true": y_true, "y_pred": y_hat}) \
-      .to_csv(Path(out_png).with_suffix(".csv"), index=False)
+    m_train = _regression_metrics(y_true_train, y_pred_train)
+    m_val   = _regression_metrics(y_true_val,   y_pred_val)
 
-# Main loop for splits
-df_external = pd.read_csv(EXTERNAL_TEST_CSV)
-all_rows = []
+    rows = []
+    rows.append({"dataset": "train", **m_train})
+    rows.append({"dataset": "val",   **m_val})
+    pd.DataFrame(rows).to_csv(out_csv_path, index=False)
 
+# Training loop
 for SPLIT in ALL_SPLITS:
     print(f"\n SPLIT: {SPLIT.upper()}", flush=True)
 
     SPLIT_DIR = BASE_SPLITS_DIR / SPLIT
     OUTPUTDIR = (BASE_OUT_DIR / SPLIT); OUTPUTDIR.mkdir(parents=True, exist_ok=True)
 
-    per_split_rows = []
-
     for i in range(1, 6):
         print(f"\n===== Fold {i} ({SPLIT}) =====", flush=True)
 
         train_path = find_file(SPLIT_DIR, SPLIT, i, "train")
         val_path   = find_file(SPLIT_DIR, SPLIT, i, "val")
-        test_path  = find_file(SPLIT_DIR, SPLIT, i, "test")
 
         df_train = pd.read_csv(train_path)
         df_val   = pd.read_csv(val_path)
-        df_test  = pd.read_csv(test_path)
-        print(f"Loaded | train={len(df_train):,}  val={len(df_val):,}  "
-              f"test={len(df_test):,}  external={len(df_external):,}", flush=True)
+        print(f"Loaded | train={len(df_train):,}  val={len(df_val):,}", flush=True)
 
+        # Prepare data
         featurizer = featurizers.SimpleMoleculeMolGraphFeaturizer()
-
         train_set = data.MoleculeDataset(to_points(df_train), featurizer)
         scaler = train_set.normalize_targets()
 
-        val_set  = data.MoleculeDataset(to_points(df_val), featurizer);  val_set.normalize_targets(scaler)
-        test_set = data.MoleculeDataset(to_points(df_test), featurizer); test_set.normalize_targets(scaler)
-        ext_set  = data.MoleculeDataset(to_points(df_external), featurizer); ext_set.normalize_targets(scaler)
+        val_set  = data.MoleculeDataset(to_points(df_val), featurizer)
+        val_set.normalize_targets(scaler)
 
-        train_loader = data.build_dataloader(train_set, num_workers=NUM_WORKERS)
+        train_loader = data.build_dataloader(train_set, num_workers=NUM_WORKERS)  # default shuffle=True is fine for training
         val_loader   = data.build_dataloader(val_set,   num_workers=NUM_WORKERS, shuffle=False)
-        test_loader  = data.build_dataloader(test_set,  num_workers=NUM_WORKERS, shuffle=False)
-        ext_loader   = data.build_dataloader(ext_set,   num_workers=NUM_WORKERS, shuffle=False)
 
+        # Model
         mp = nn.BondMessagePassing()
         agg = nn.MeanAggregation()
-        out_tf = nn.UnscaleTransform.from_standard_scaler(scaler)
+        out_tf = nn.UnscaleTransform.from_standard_scaler(scaler)  # unscale preds back to pIC50 space
         ffn = nn.RegressionFFN(output_transform=out_tf)
-        metric_list = [nn.metrics.RMSE(), nn.metrics.MSE(), nn.metrics.MAE()]  # logs 'val/rmse' etc.
+        metric_list = [nn.metrics.RMSE(), nn.metrics.MSE(), nn.metrics.MAE()]
         model = models.MPNN(mp, agg, ffn, batch_norm=True, metrics=metric_list)
 
         fold_out = OUTPUTDIR / f"fold_{i}"
         fold_out.mkdir(parents=True, exist_ok=True)
-        logger = TensorBoardLogger(save_dir=str(OUTPUTDIR), name=f"fold_{i}")
+
+        # loggers: keep TB + add CSV (per-epoch metrics go to metrics.csv)
+        tb_logger  = TensorBoardLogger(save_dir=str(OUTPUTDIR), name=f"fold_{i}")
+        csv_logger = CSVLogger(save_dir=str(OUTPUTDIR),     name=f"fold_{i}")
 
         ckpt = ModelCheckpoint(
             dirpath=fold_out,
@@ -171,8 +170,7 @@ for SPLIT in ALL_SPLITS:
             monitor="val/rmse",
             mode="min",
             save_top_k=1,
-            save_last=True,
-        )
+            save_last=True)
         es = EarlyStopping(monitor="val/rmse", mode="min", patience=PATIENCE)
 
         trainer = pl.Trainer(
@@ -181,41 +179,26 @@ for SPLIT in ALL_SPLITS:
             precision="16-mixed" if use_gpu else "32-true",
             max_epochs=MAX_EPOCHS,
             callbacks=[ckpt, es],
-            logger=logger,
+            logger=[tb_logger, csv_logger],
             enable_checkpointing=True,
-            enable_progress_bar=True,
-        )
-        
-        # Print statement for training and checkpoints comparing test outputs
+            enable_progress_bar=True)
+
         print(f"Training (max_epochs={MAX_EPOCHS}, patience={PATIENCE})...", flush=True)
         trainer.fit(model, train_dataloaders=train_loader, val_dataloaders=val_loader)
         print(f"Best checkpoint: {ckpt.best_model_path}", flush=True)
 
-        test_metrics = trainer.test(dataloaders=test_loader, ckpt_path="best")[0]
-        ext_metrics  = trainer.test(dataloaders=ext_loader,  ckpt_path="best")[0]
-        test_rmse = pull_rmse(test_metrics)
-        ext_rmse  = pull_rmse(ext_metrics)
-        print(f"Fold test RMSE={test_rmse:.4f} | External RMSE={ext_rmse:.4f}", flush=True)
+        # Evaluate best ckpt on train and val: save summary CSV 
+        summary_csv = fold_out / "final_eval_metrics.csv"
+        evaluate_and_save(trainer, model, train_set, val_set, df_train, df_val, ckpt.best_model_path, summary_csv)
+        print(f"Saved metrics summary to {summary_csv}", flush=True)
 
-        # Visuals
-        save_pred_plot(trainer, model, test_loader, df_test,
-                       fold_out / "pred_vs_true_fold_test.png", SPLIT, i, "Fold Test Data")
-        save_pred_plot(trainer, model, ext_loader,  df_external,
-                       fold_out / "pred_vs_true_sexual_data.png", SPLIT, i, "Sexual Data")
+        # Copy per-epoch CSV logs next to checkpoint for convenience
+        per_epoch_src = Path(csv_logger.log_dir) / "metrics.csv"
+        per_epoch_dst = fold_out / "metrics_per_epoch.csv"
+        if per_epoch_src.exists():
+            shutil.copy(per_epoch_src, per_epoch_dst)
+            print(f"Saved per-epoch metrics -> {per_epoch_dst}", flush=True)
+        else:
+            print("WARN: CSV per-epoch log not found; check logger path.", flush=True)
 
-        row = {"split": SPLIT, "fold": i, "fold_test_rmse": test_rmse, "external_rmse": ext_rmse}
-        per_split_rows.append(row)
-        all_rows.append(row)
-
-    # Save per-split summary
-    per_split_df = pd.DataFrame(per_split_rows).set_index(["split", "fold"])
-    per_split_df.to_csv(OUTPUTDIR / "cv_results_with_external.csv")
-    print(f"\n>>> {SPLIT} summary:\n", per_split_df.groupby(level=0).mean())
-
-# Save combined summary across all splits
-all_df = pd.DataFrame(all_rows).set_index(["split", "fold"]).sort_index()
-all_df.to_csv(BASE_OUT_DIR / "cv_results_with_external_ALL.csv")
-print("\n====================  ALL SPLITS — MEANS  ====================")
-print(all_df.groupby(level=0)[["fold_test_rmse", "external_rmse"]].mean())
-print(f"\nCombined summary saved to: {BASE_OUT_DIR / 'cv_results_with_external_ALL.csv'}")
-print(f"Per-split logs & ckpts under: {BASE_OUT_DIR}/<split>/fold_<i>/")
+print(f"\nDone. Per-split logs & ckpts under: {BASE_OUT_DIR}/<split>/fold_<i>/")

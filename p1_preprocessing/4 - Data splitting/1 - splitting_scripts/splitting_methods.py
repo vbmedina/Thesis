@@ -94,7 +94,7 @@ OUTROOT  = Path("./p1_preprocessing/4 - Data splitting/2 - split_data")
 # Settings
 SEED = np.random.randint(1, 10000000000)
 print(f"Random seed: {SEED}")
-np.random.seed(SEED)
+np.random.seed(SEED) # Seed used for study was 2858808528
 K = 5
 VAL_FRAC_TOTAL = 0.10
 ACTIVE_THRESHOLD = 6.0
