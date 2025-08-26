@@ -1,6 +1,10 @@
 ''' Description: This script uses the CSV file generated from the Step 1. 1_mapping_drug_resistance.py
-to create heatmaps for different drug resistance flags. It visualizes the drug potency of the top 100 molecules
-tested against various strains, categorized by their resistance flags.'''
+to create heatmaps for different drug resistance flags. It visualizes the drug potency of the top 50 molecules
+tested against various strains, categorized by their resistance flags.
+
+Requirements:
+* Final Data with Flags from step 1_mapping_drug_resistance.py
+'''
 
 # Imports
 import pandas as pd
@@ -15,22 +19,22 @@ df_clean = df.dropna(subset=['Representative_pIC50'])
 # Filter for "CQR"
 df_cqr = df_clean[df_clean['Flag Groups'].str.contains('CQR', na=False)]
 
-# Top 100 by Representative_pIC50
+# Top 50 by Representative_pIC50
 top_molecules = (
     df_cqr
     .groupby('Molecule_ChEMBL_ID')['Representative_pIC50']
     .max()
     .sort_values(ascending=False)
-    .head(100)
+    .head(50)
     .index
 )
 
 # Subset original CQR data to only top molecules
-df_top100_mols = df_cqr[df_cqr['Molecule_ChEMBL_ID'].isin(top_molecules)]
+df_top50_mols = df_cqr[df_cqr['Molecule_ChEMBL_ID'].isin(top_molecules)]
 
 
 # Pivot to matrix for heatmap
-heatmap_data = df_top100_mols.pivot_table(
+heatmap_data = df_top50_mols.pivot_table(
     index='Molecule_ChEMBL_ID',
     columns='standardized_strain',
     values='Representative_pIC50'
@@ -52,19 +56,19 @@ ax = sns.heatmap(
     annot=True,
     fmt='.2f',
     cbar_kws={'label': 'Representative pIC50'},
-    annot_kws={'size': 6},
+    annot_kws={'size': 11},
     linewidths=0.25,
     linecolor='gray'
 )
 
 # Rotate axis labels
-ax.set_xticklabels(ax.get_xticklabels(), rotation=90, ha='center', fontsize=10)
+ax.set_xticklabels(ax.get_xticklabels(), rotation=90, ha='center', fontsize=11)
 ax.set_yticklabels(ax.get_yticklabels(), rotation=0, fontsize=4)
 
 # Layout and title
-plt.title("Drug Potency of Top 100 Molecules Tested Against Chloroquine Resistant Strains", pad=20)
-plt.xlabel('Strain')
-plt.ylabel('Molecule ChEMBL ID')
+plt.title("Drug Potency of Top 50 Molecules Tested Against Chloroquine Resistant Strains", pad=20, fontsize=15)
+plt.xlabel('Strain', fontsize=11)
+plt.ylabel('Molecule ChEMBL ID', fontsize=11)
 plt.tight_layout()
 plt.subplots_adjust(bottom=0.25)
 plt.savefig('./p1_preprocessing/3 - Data visualizations before splits/drug_resistance/cqr_hm.png', dpi=300, bbox_inches='tight')
@@ -73,21 +77,21 @@ plt.savefig('./p1_preprocessing/3 - Data visualizations before splits/drug_resis
 # Filter for "MEFR"
 df_cqr = df_clean[df_clean['Flag Groups'].str.contains('MEFR', na=False)]
 
-# Top 100 by Representative_pIC50
+# Top 50 by Representative_pIC50
 top_molecules = (
     df_cqr
     .groupby('Molecule_ChEMBL_ID')['Representative_pIC50']
     .max()
     .sort_values(ascending=False)
-    .head(100)
+    .head(50)
     .index
 )
 
 # Subset original CQR data to only top molecules
-df_top100_mols = df_cqr[df_cqr['Molecule_ChEMBL_ID'].isin(top_molecules)]
+df_top50_mols = df_cqr[df_cqr['Molecule_ChEMBL_ID'].isin(top_molecules)]
 
 # Pivot to matrix for heatmap
-heatmap_data = df_top100_mols.pivot_table(
+heatmap_data = df_top50_mols.pivot_table(
     index='Molecule_ChEMBL_ID',
     columns='standardized_strain',
     values='Representative_pIC50'
@@ -109,19 +113,19 @@ ax = sns.heatmap(
     annot=True,
     fmt='.2f',
     cbar_kws={'label': 'Representative pIC50'},
-    annot_kws={'size': 6},
+    annot_kws={'size': 11},
     linewidths=0.25,
     linecolor='gray'
 )
 
 # Rotate axis labels
-ax.set_xticklabels(ax.get_xticklabels(), rotation=90, ha='center', fontsize=10)
+ax.set_xticklabels(ax.get_xticklabels(), rotation=90, ha='center', fontsize=11)
 ax.set_yticklabels(ax.get_yticklabels(), rotation=0, fontsize=4)
 
 # Adjust layout and title
-plt.title("Drug Potency of Top 100 Molecules Tested Against Mefloquine Resistant Strains", pad=20)
-plt.xlabel('Strain')
-plt.ylabel('Molecule ChEMBL ID')
+plt.title("Drug Potency of Top 50 Molecules Tested Against Mefloquine Resistant Strains", pad=20, fontsize=15)
+plt.xlabel('Strain', fontsize=11)
+plt.ylabel('Molecule ChEMBL ID', fontsize=11)
 plt.tight_layout()
 plt.subplots_adjust(bottom=0.25) 
 plt.savefig('./p1_preprocessing/3 - Data visualizations before splits/drug_resistance/mefr_hm.png', dpi=300, bbox_inches='tight')
@@ -130,21 +134,21 @@ plt.savefig('./p1_preprocessing/3 - Data visualizations before splits/drug_resis
 # Filter for "PYRR"
 df_cqr = df_clean[df_clean['Flag Groups'].str.contains('PYRR', na=False)]
 
-# Top 100 by Representative_pIC50
+# Top 50 by Representative_pIC50
 top_molecules = (
     df_cqr
     .groupby('Molecule_ChEMBL_ID')['Representative_pIC50']
     .max()
     .sort_values(ascending=False)
-    .head(100)
+    .head(50)
     .index
 )
 
 # Subset original CQR data to only top molecules
-df_top100_mols = df_cqr[df_cqr['Molecule_ChEMBL_ID'].isin(top_molecules)]
+df_top50_mols = df_cqr[df_cqr['Molecule_ChEMBL_ID'].isin(top_molecules)]
 
 # Pivot to matrix for heatmap
-heatmap_data = df_top100_mols.pivot_table(
+heatmap_data = df_top50_mols.pivot_table(
     index='Molecule_ChEMBL_ID',
     columns='standardized_strain',
     values='Representative_pIC50'
@@ -166,19 +170,19 @@ ax = sns.heatmap(
     annot=True,
     fmt='.2f',
     cbar_kws={'label': 'Representative pIC50'},
-    annot_kws={'size': 6},
+    annot_kws={'size': 11},
     linewidths=0.25,
     linecolor='gray'
 )
 
 # Rotate axis labels
-ax.set_xticklabels(ax.get_xticklabels(), rotation=90, ha='center', fontsize=10)
+ax.set_xticklabels(ax.get_xticklabels(), rotation=90, ha='center', fontsize=11)
 ax.set_yticklabels(ax.get_yticklabels(), rotation=0, fontsize=4)
 
 # Adjust layout and title
-plt.title("Drug Potency of Top 100 Molecules Tested Against Pyrimethamine Resistant Strains", pad=20)
-plt.xlabel('Strain')
-plt.ylabel('Molecule ChEMBL ID')
+plt.title("Drug Potency of Top 50 Molecules Tested Against Pyrimethamine Resistant Strains", pad=20, fontsize=15)
+plt.xlabel('Strain', fontsize=11)
+plt.ylabel('Molecule ChEMBL ID', fontsize=11)
 plt.tight_layout()
 plt.subplots_adjust(bottom=0.25) 
 plt.savefig('./p1_preprocessing/3 - Data visualizations before splits/drug_resistance/pyrr_hm.png', dpi=300, bbox_inches='tight')
@@ -187,21 +191,21 @@ plt.savefig('./p1_preprocessing/3 - Data visualizations before splits/drug_resis
 # Filter for "CQS"
 df_cqr = df_clean[df_clean['Flag Groups'].str.contains('CQS', na=False)]
 
-# Top 100 by Representative_pIC50
+# Top 50 by Representative_pIC50
 top_molecules = (
     df_cqr
     .groupby('Molecule_ChEMBL_ID')['Representative_pIC50']
     .max()
     .sort_values(ascending=False)
-    .head(100)
+    .head(50)
     .index
 )
 
 # Subset the original CQR data to only top molecules
-df_top100_mols = df_cqr[df_cqr['Molecule_ChEMBL_ID'].isin(top_molecules)]
+df_top50_mols = df_cqr[df_cqr['Molecule_ChEMBL_ID'].isin(top_molecules)]
 
 # Pivot to matrix for heatmap
-heatmap_data = df_top100_mols.pivot_table(
+heatmap_data = df_top50_mols.pivot_table(
     index='Molecule_ChEMBL_ID',
     columns='standardized_strain',
     values='Representative_pIC50'
@@ -223,19 +227,19 @@ ax = sns.heatmap(
     annot=True,
     fmt='.2f',
     cbar_kws={'label': 'Representative pIC50'},
-    annot_kws={'size': 6},
+    annot_kws={'size': 11},
     linewidths=0.25,
     linecolor='gray'
 )
 
 # Rotate axis labels
-ax.set_xticklabels(ax.get_xticklabels(), rotation=90, ha='center', fontsize=10)
+ax.set_xticklabels(ax.get_xticklabels(), rotation=90, ha='center', fontsize=11)
 ax.set_yticklabels(ax.get_yticklabels(), rotation=0, fontsize=4)
 
 # Adjust layout and title
-plt.title("Drug Potency of Top 100 Molecules Tested Against Chloroquine Sensitive Strains", pad=20)
-plt.xlabel('Strain')
-plt.ylabel('Molecule ChEMBL ID')
+plt.title("Drug Potency of Top 50 Molecules Tested Against Chloroquine Sensitive Strains", pad=20, fontsize=15)
+plt.xlabel('Strain', fontsize=11)
+plt.ylabel('Molecule ChEMBL ID', fontsize=11)
 plt.tight_layout()
 plt.subplots_adjust(bottom=0.25) 
 plt.savefig('./p1_preprocessing/3 - Data visualizations before splits/drug_resistance/cqs_hm.png', dpi=300, bbox_inches='tight')
@@ -244,22 +248,22 @@ plt.savefig('./p1_preprocessing/3 - Data visualizations before splits/drug_resis
 # Filter for "MEFS"
 df_cqr = df_clean[df_clean['Flag Groups'].str.contains('MEFS', na=False)]
 
-# Top 100 by Representative_pIC50
+# Top 50 by Representative_pIC50
 top_molecules = (
     df_cqr
     .groupby('Molecule_ChEMBL_ID')['Representative_pIC50']
     .max()
     .sort_values(ascending=False)
-    .head(100)
+    .head(50)
     .index
 )
 
 # Subset the original CQR data to only top molecules
-df_top100_mols = df_cqr[df_cqr['Molecule_ChEMBL_ID'].isin(top_molecules)]
+df_top50_mols = df_cqr[df_cqr['Molecule_ChEMBL_ID'].isin(top_molecules)]
 
 
 # Pivot to matrix for heatmap
-heatmap_data = df_top100_mols.pivot_table(
+heatmap_data = df_top50_mols.pivot_table(
     index='Molecule_ChEMBL_ID',
     columns='standardized_strain',
     values='Representative_pIC50'
@@ -282,19 +286,19 @@ ax = sns.heatmap(
     annot=True,
     fmt='.2f',
     cbar_kws={'label': 'Representative pIC50'},
-    annot_kws={'size': 6},
+    annot_kws={'size': 11},
     linewidths=0.25,
     linecolor='gray'
 )
 
 # Rotate axis labels
-ax.set_xticklabels(ax.get_xticklabels(), rotation=90, ha='center', fontsize=10)
+ax.set_xticklabels(ax.get_xticklabels(), rotation=90, ha='center', fontsize=11)
 ax.set_yticklabels(ax.get_yticklabels(), rotation=0, fontsize=4)
 
 # 8. Adjust layout and title
-plt.title("Drug Potency of Top 100 Molecules Tested Against Mefloquine Sensitive Strains", pad=20)
-plt.xlabel('Strain')
-plt.ylabel('Molecule ChEMBL ID')
+plt.title("Drug Potency of Top 50 Molecules Tested Against Mefloquine Sensitive Strains", pad=20, fontsize=15)
+plt.xlabel('Strain', fontsize=11)
+plt.ylabel('Molecule ChEMBL ID', fontsize=11)
 plt.tight_layout()
 plt.subplots_adjust(bottom=0.25) 
 plt.savefig('./p1_preprocessing/3 - Data visualizations before splits/drug_resistance/mefs_hm.png', dpi=300, bbox_inches='tight')
