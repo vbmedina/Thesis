@@ -1,6 +1,0 @@
-split,fold_test_rmse,fold_test_spearman_rho,fold_test_pr_auc,fold_test_mcc_at_6,sexual_data_rmse,sexual_data_spearman_rho,sexual_data_pr_auc,sexual_data_mcc_at_6,delta_rmse_mean
-butina,nan ± nan,nan ± nan,nan ± nan,nan ± nan,nan ± nan,nan ± nan,nan ± nan,nan ± nan,-0.06278147078122864
-random,nan ± nan,nan ± nan,nan ± nan,nan ± nan,nan ± nan,nan ± nan,nan ± nan,nan ± nan,0.3379779860151232
-scaffold,nan ± nan,nan ± nan,nan ± nan,nan ± nan,nan ± nan,nan ± nan,nan ± nan,nan ± nan,0.03558931681797162
-umap_kmeans,nan ± nan,nan ± nan,nan ± nan,nan ± nan,nan ± nan,nan ± nan,nan ± nan,nan ± nan,-0.4070673274028026
-umap_ward,nan ± nan,nan ± nan,nan ± nan,nan ± nan,nan ± nan,nan ± nan,nan ± nan,nan ± nan,-0.6646419375117547
