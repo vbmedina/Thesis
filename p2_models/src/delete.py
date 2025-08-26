@@ -41,7 +41,7 @@ import shutil
 ALL_SPLITS = ["random", "scaffold", "butina", "umap_kmeans", "umap_ward"]
 p2models_dir = Path.home() / "Thesis" / "p2_models"
 BASE_SPLITS_DIR = p2models_dir / "input_data" / "split_data"
-BASE_OUT_DIR = p2models_dir / "models"
+BASE_OUT_DIR = p2models_dir / "input_data"
 
 # Inputs
 SMILES_COL = "Smiles"
@@ -49,7 +49,7 @@ TARGET_COLS = ["pIC50"]
 
 # Settings
 NUM_WORKERS = 0
-MAX_EPOCHS = 200
+MAX_EPOCHS = 1
 PATIENCE = 15
 use_gpu = torch.cuda.is_available()
 

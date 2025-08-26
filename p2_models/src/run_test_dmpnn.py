@@ -1,11 +1,9 @@
 #!/usr/bin/env python3
 from __future__ import annotations
-
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Tuple
 import re
-
 import numpy as np
 import pandas as pd
 import torch
@@ -26,7 +24,7 @@ THRESHOLD = 6.0
 NUM_WORKERS = 0
 SEED = 1337
 
-# Condig
+# Config
 @dataclass
 class Config:
     base_root: Path = BASE_ROOT
