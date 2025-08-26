@@ -1,13 +1,11 @@
 #!/usr/bin/env python3
 """
-02_choose_split_and_make_figs.py
-
-After 01_score_models.py, choose the **showcase split** by a criterion and make the 3 figures:
+Description: Aftering running run_test_dmpnn.py this script creates the following three figures for result evaluation:
 
 Figures:
   1) scatter_<split>_bestfold.png  (two panels: asexual, sexual)
   2) pr_curves_<split>_bestfold.png (two panels)
-  3) generalization_gap_bar.png     (ΔRMSE = Sexual − Asexual across splits)
+  3) generalization_gap_bar.png     (ΔRMSE = Sexual to Asexual across splits)
 
 Selection criterion (for the split and the fold within it):
   sexual_pr_auc   (default; maximize)
