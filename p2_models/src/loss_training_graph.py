@@ -59,7 +59,7 @@ def plot_one(base_models_dir: Path, out_dir: Path, split: str, fold: int, color)
         return False
 
     split_title = pretty_split_name(split)
-    plt.title(f"{split_title} fold {fold} — RMSE per epoch", size=15)
+    plt.title(f"{split_title} fold {fold} — RMSE per Epoch", size=15)
     plt.tight_layout()
     plt.xlabel("Epoch", size=11)
     plt.ylabel("RMSE", size=11)
