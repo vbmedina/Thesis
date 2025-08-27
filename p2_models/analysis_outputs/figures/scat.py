@@ -173,7 +173,7 @@ for split, fold in SELECTED:
     fig, axes = plt.subplots(1, 2, figsize=(12.5, 7.0))
     # big label on top with split name + fold
     split_name = SPLIT_PRETTY.get(split, split.replace("_", " "))
-    fig.suptitle(f"Split: {split_name} — fold {fold}", fontsize=14, fontweight="bold", y=0.95)
+    fig.suptitle(f"Split: {split_name} — fold {fold}", fontsize=16, y=0.95)
 
     draw_panel(axes[0], df_asex, "Asexual (fold test)")
     draw_panel(axes[1], df_sex,  "Sexual (external)")
