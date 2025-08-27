@@ -11,8 +11,16 @@ SP_ORDER = ["random", "scaffold", "butina", "umap_kmeans", "umap_ward"]
 REQUIRED_FILE = "metrics_per_epoch.csv"
 
 def pretty_split_name(s: str) -> str:
-    # "umap_kmeans" -> "Umap kmeans"
-    return s.replace("_", " ").capitalize()
+    # Exact titles per split
+    mapping = {
+        "random":       "Random",
+        "scaffold":     "Scaffold",
+        "butina":       "Butina",
+        "umap_kmeans":  "UMAP (kmeans)",
+        "umap_ward":    "UMAP (ward)",
+    }
+    # fallback: title-case with spaces if an unexpected name appears
+    return mapping.get(s, s.replace("_", " ").title())
 
 def read_per_epoch(csv_path: Path) -> pd.DataFrame:
     df = pd.read_csv(csv_path)
@@ -59,7 +67,7 @@ def plot_one(base_models_dir: Path, out_dir: Path, split: str, fold: int, color)
         return False
 
     split_title = pretty_split_name(split)
-    plt.title(f"{split_title} Fold {fold} — RMSE per Epoch", size=15)
+    plt.title(f"RMSE per Epoch: {split_title} Fold {fold}", size=15)
     plt.tight_layout()
     plt.xlabel("Epoch", size=11)
     plt.ylabel("RMSE", size=11)
