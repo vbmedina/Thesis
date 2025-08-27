@@ -282,43 +282,5 @@ def main():
         for dataset in ["fold_test", "sexual_data"]:
             main_df[name(metric_stat, dataset)] = wide[metric_stat][dataset].values
 
-    main_df["delta_rmse_mean"] = delta_rmse_mean.values
-
-    ordered = ["split",
-               "fold_test_rmse_mean", "fold_test_rmse_sd",
-               "fold_test_spearman_rho_mean", "fold_test_spearman_rho_sd",
-               "fold_test_pr_auc_mean", "fold_test_pr_auc_sd",
-               "fold_test_mcc_at_6_mean", "fold_test_mcc_at_6_sd",
-               "sexual_data_rmse_mean", "sexual_data_rmse_sd",
-               "sexual_data_spearman_rho_mean", "sexual_data_spearman_rho_sd",
-               "sexual_data_pr_auc_mean", "sexual_data_pr_auc_sd",
-               "sexual_data_mcc_at_6_mean", "sexual_data_mcc_at_6_sd",
-               "delta_rmse_mean"]
-    main_df = main_df[ordered]
-    (out_root / "main_table_core_metrics.csv").write_text(main_df.to_csv(index=False))
-    print(f"Saved to {out_root / 'main_table_core_metrics.csv'}")
-
-    def fmt(m, s):
-        return f"{m:.3f} ± {s:.3f}" if np.isfinite(m) and np.isfinite(s) else "nan ± nan"
-
-    metrics_rows = []
-    for _, row in main_df.iterrows():
-        metrics_rows.append({
-            "split": row["split"],
-            "fold_test_rmse": fmt(row["fold_test_rmse_mean"], row["fold_test_rmse_sd"]),
-            "fold_test_spearman_rho": fmt(row["fold_test_spearman_rho_mean"], row["fold_test_spearman_rho_sd"]),
-            "fold_test_pr_auc": fmt(row["fold_test_pr_auc_mean"], row["fold_test_pr_auc_sd"]),
-            "fold_test_mcc_at_6": fmt(row["fold_test_mcc_at_6_mean"], row["fold_test_mcc_at_6_sd"]),
-            "sexual_data_rmse": fmt(row["sexual_data_rmse_mean"], row["sexual_data_rmse_sd"]),
-            "sexual_data_spearman_rho": fmt(row["sexual_data_spearman_rho_mean"], row["sexual_data_spearman_rho_sd"]),
-            "sexual_data_pr_auc": fmt(row["sexual_data_pr_auc_mean"], row["sexual_data_pr_auc_sd"]),
-            "sexual_data_mcc_at_6": fmt(row["sexual_data_mcc_at_6_mean"], row["sexual_data_mcc_at_6_sd"]),
-            "delta_rmse_mean": row["delta_rmse_mean"],
-        })
-    metrics_df = pd.DataFrame(metrics_rows)
-    (out_root / "main_table_core_metrics.csv").write_text(metrics_df.to_csv(index=False))
-    print(f"Saved to {out_root / 'main_table_core_metrics.csv'}")
-
-
 if __name__ == "__main__":
     main()

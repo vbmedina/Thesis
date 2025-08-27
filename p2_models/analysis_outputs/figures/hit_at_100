@@ -1,0 +1,144 @@
+#!/usr/bin/env python3
+# Main figures only (5): Hit@100, EF@100, RMSE, Spearman ρ, and ΔHit@100.
+# Uses seaborn Reds palette and fixed split order.
+
+from pathlib import Path
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# -------------------- Paths --------------------
+TOPK_CSV = "p2_models/analysis_outputs/topk_metrics_by_split_fold_rows.csv"
+CORE_CSV = "p2_models/analysis_outputs/all_metrics_by_split_fold_core.csv"
+OUT_DIR  = "p2_models/analysis_outputs/figures"
+Path(OUT_DIR).mkdir(parents=True, exist_ok=True)
+
+# -------------------- Visuals --------------------
+PALETTE = sns.color_palette("Reds", 6)
+COLOR_ASEX = PALETTE[2]  # medium red
+COLOR_SEX  = PALETTE[4]  # darker red
+COLOR_GAP  = PALETTE[3]  # mid red for delta bars
+GRID_ALPHA = 0.2
+plt.rcParams.update({
+    "figure.dpi": 150,
+    "axes.grid": True,
+    "grid.alpha": GRID_ALPHA,
+    "grid.linestyle": "--",
+    "axes.spines.top": False,
+    "axes.spines.right": False,
+})
+
+# Fixed left-to-right split order
+SPLIT_ORDER  = ["random", "scaffold", "butina", "umap_kmeans", "umap_ward"]
+SPLIT_LABELS = {
+    "random": "random",
+    "scaffold": "scaffold",
+    "butina": "butina",
+    "umap_kmeans": "umap kmeans",
+    "umap_ward": "umap ward",
+}
+
+# -------------------- Helpers --------------------
+def require_columns(df, cols, name):
+    missing = [c for c in cols if c not in df.columns]
+    if missing:
+        raise ValueError(f"{name} missing columns: {missing}. Present: {list(df.columns)}")
+
+def order_splits(available):
+    return [s for s in SPLIT_ORDER if s in available]
+
+def grouped_bar(fig_path, metric_df, value_col, sd_col, ylabel, title, splits):
+    # metric_df must have split,dataset,value_col,sd_col
+    df_fold = metric_df[metric_df["dataset"]=="fold_test"].set_index("split").reindex(splits)
+    df_sex  = metric_df[metric_df["dataset"]=="sexual_data"].set_index("split").reindex(splits)
+
+    vals_a = np.nan_to_num(df_fold[value_col].to_numpy(), nan=0.0)
+    sds_a  = np.nan_to_num(df_fold[sd_col].to_numpy(),   nan=0.0)
+    vals_b = np.nan_to_num(df_sex[value_col].to_numpy(), nan=0.0)
+    sds_b  = np.nan_to_num(df_sex[sd_col].to_numpy(),    nan=0.0)
+
+    x = np.arange(len(splits)); bar_w = 0.38
+    fig, ax = plt.subplots(figsize=(7,4))
+    ax.bar(x - bar_w/2, vals_a, width=bar_w, yerr=sds_a, capsize=3,
+           label="Asexual (fold_test)", color=COLOR_ASEX)
+    ax.bar(x + bar_w/2, vals_b, width=bar_w, yerr=sds_b, capsize=3,
+           label="Sexual (external)", color=COLOR_SEX)
+    ax.set_xticks(x)
+    ax.set_xticklabels([SPLIT_LABELS.get(s, s) for s in splits], rotation=15, ha="right")
+    ax.set_ylabel(ylabel)
+    ax.set_title(title)
+    ax.legend()
+    fig.tight_layout()
+    fig.savefig(fig_path)
+    plt.close(fig)
+    print("Saved", fig_path)
+
+# -------------------- Load --------------------
+if not Path(TOPK_CSV).exists():
+    raise FileNotFoundError(f"Cannot find {TOPK_CSV}")
+if not Path(CORE_CSV).exists():
+    raise FileNotFoundError(f"Cannot find {CORE_CSV}")
+
+topk = pd.read_csv(TOPK_CSV)
+core = pd.read_csv(CORE_CSV)
+
+require_columns(topk, ["split","dataset","hit_at_k","ef_at_k"], "topk CSV")
+require_columns(core, ["split","dataset","rmse","spearman_rho"], "core CSV")
+
+# -------------------- Aggregate --------------------
+agg_topk = (
+    topk.groupby(["split","dataset"], as_index=False)
+        .agg(hit_mean=("hit_at_k","mean"), hit_sd=("hit_at_k","std"),
+             ef_mean=("ef_at_k","mean"),   ef_sd=("ef_at_k","std"))
+)
+agg_core = (
+    core.groupby(["split","dataset"], as_index=False)
+        .agg(rmse_mean=("rmse","mean"), rmse_sd=("rmse","std"),
+             rho_mean=("spearman_rho","mean"), rho_sd=("spearman_rho","std"))
+)
+
+available = set(agg_topk["split"]).union(set(agg_core["split"]))
+splits = order_splits(available)
+
+# -------------------- Figures --------------------
+# 1) HitRate@100 by split
+grouped_bar(str(Path(OUT_DIR)/"fig1_hit_at_100_by_split.png"),
+            agg_topk.rename(columns={"hit_mean":"val","hit_sd":"sd"}),
+            "val","sd","HitRate@100 (row-level)",
+            "Early Recognition — HitRate@100 by Split", splits)
+
+# 2) EF@100 by split
+grouped_bar(str(Path(OUT_DIR)/"fig2_ef_at_100_by_split.png"),
+            agg_topk.rename(columns={"ef_mean":"val","ef_sd":"sd"}),
+            "val","sd","EF@100 (row-level)",
+            "Early Recognition — Enrichment Factor @100 by Split", splits)
+
+# 3) RMSE by split
+grouped_bar(str(Path(OUT_DIR)/"fig3_rmse_by_split.png"),
+            agg_core.rename(columns={"rmse_mean":"val","rmse_sd":"sd"}),
+            "val","sd","RMSE (pIC50)",
+            "Regression Error — RMSE by Split", splits)
+
+# 4) Spearman ρ by split
+grouped_bar(str(Path(OUT_DIR)/"fig4_spearman_by_split.png"),
+            agg_core.rename(columns={"rho_mean":"val","rho_sd":"sd"}),
+            "val","sd","Spearman ρ",
+            "Rank Quality — Spearman ρ by Split", splits)
+
+# 5) ΔHitRate@100 (Sexual − Asexual)
+hit_wide = agg_topk.pivot(index="split", columns="dataset", values="hit_mean").reindex(splits)
+delta_hit = (hit_wide["sexual_data"] - hit_wide["fold_test"]).to_numpy()
+x = np.arange(len(splits))
+fig, ax = plt.subplots(figsize=(6.5,4))
+ax.bar(x, delta_hit, color=COLOR_GAP)
+ax.set_xticks(x)
+ax.set_xticklabels([SPLIT_LABELS.get(s, s) for s in splits], rotation=15, ha="right")
+ax.set_ylabel("ΔHitRate@100 (Sexual − Asexual)")
+ax.set_title("Generalization Gap — Early Recognition")
+fig.tight_layout()
+gap_path = str(Path(OUT_DIR)/"fig5_gap_hit_at_100_by_split.png")
+fig.savefig(gap_path); plt.close(fig)
+print("Saved", gap_path)
+
+print("All done.")
