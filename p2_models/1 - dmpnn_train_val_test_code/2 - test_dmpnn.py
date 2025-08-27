@@ -1,4 +1,46 @@
-'''Description: This script'''
+'''
+Description: Evaluates Chemprop D-MPNN best checkpoints on fold test sets and an 
+the external sexual test set, and export predictions + core metrics.
+
+Requirements
+- Model checkpoints per split/fold at: ./p2_models/models/<split>/fold_<k>/
+  - Accepted names (checked in this order): best-v1.ckpt / best.ckpt / last-v1.ckpt / last.ckpt
+- Fold test CSVs from the data-splitting step: ./p2_models/input_data/split_data/{split}/
+  - Filenames accepted: {split}_fold_{k}_test.csv or {split}_fold{k}_test.csv
+- External evaluation CSV: ./p2_models/input_data/sexual_test.csv
+- Required columns: "Smiles", "pIC50"
+
+Splits & Folds
+- Splits: ["random", "scaffold", "butina", "umap_kmeans", "umap_ward"]
+- Folds: The script evaluates whatever fold directories exist with a valid checkpoint.
+    (After step 1 (train and validate), user selects the top-k models per split by 
+    lowest RMSE with Spearman (rho) as the tiebreak.)
+
+Procedure
+1) Discover split/fold directories that contain any accepted checkpoint.
+2) For each (split, fold):
+   a. Load the fold test CSV and the external CSV.
+   b. Parse SMILES to RDKit Mol objects; drop invalid entries (logged).
+   c. Build Chemprop MoleculeDataset objects and DataLoaders.
+   d. Load the MPNN checkpoint (CPU), set eval mode, and run Lightning `Trainer.predict`.
+   e. Compute metrics on valid rows:
+      - RMSE
+      - Spearman (rho)
+      - PR-AUC (treat y ≥ 6.0 pIC50 as positive)
+      - MCC at 6.0 pIC50
+   f. Save per-fold prediction CSVs and (if any) invalid-SMILES CSVs.
+
+Outputs
+- Per split/fold directory: ./p2_models/models/<split>/fold_<k>/
+  * pred_vs_true_fold_test.csv
+  * pred_vs_true_sexual_data.csv
+- Aggregated table (per-fold rows) in: ./p2_models/analysis_outputs/
+  * all_metrics_by_split_fold_core.csv  (columns: split, fold, dataset, rmse, spearman_rho, pr_auc, mcc_at_6)
+
+Notes
+- Evaluation is CPU-only and uses a fixed seed for determinism of non-GPU components.
+- Checkpoint selection preference: best-v1 → best → last-v1 → last (printed per fold).
+'''
 from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
@@ -42,23 +84,25 @@ class Config:
     target_col: str = TARGET_COL
     threshold: float = THRESHOLD
 
-# Helpers for finding paths to best-v1.ckpt
+# Helpers for finding paths to checkpoints (best-v1/best/last-v1/last)
 def discover_splits_and_folds(base_root: Path) -> Dict[str, List[int]]:
-    """Find all <split>/fold_<n>/best-v1.ckpt under <base_root>/models."""
+    """Find all <split>/fold_<n>/ that contain any checkpoint under <base_root>/models."""
     models_root = base_root / "models"
     if not models_root.exists():
         raise FileNotFoundError(f"Missing models dir: {models_root}")
 
     splits: Dict[str, List[int]] = {}
+    ckpt_names = ("best-v1.ckpt", "best.ckpt", "last-v1.ckpt", "last.ckpt")
+
     for split_dir in sorted(p for p in models_root.iterdir() if p.is_dir()):
         split = split_dir.name
         folds: List[int] = []
-        for fd in sorted(split_dir.glob(f"fold_{TARGET_MODELS[split]}")):
+        for fd in sorted(split_dir.glob(f"fold_{TARGET_MODELS[split]}")):  # kept as-is (minimal change)
             m = re.fullmatch(r"fold_(\d+)", fd.name)
             if not m:
                 continue
             fold_num = int(m.group(1))
-            if (fd / "best-v1.ckpt").exists():
+            if any((fd / n).exists() for n in ckpt_names):
                 folds.append(fold_num)
         if folds:
             splits[split] = sorted(folds)
@@ -75,6 +119,16 @@ def find_test_csv(base_root: Path, split: str, fold: int) -> Path:
         if p.exists():
             return p
     raise FileNotFoundError(f"Missing test CSV for split={split} fold={fold} in {split_dir}")
+
+# Helper find checkpoint
+def pick_checkpoint(fold_dir: Path) -> Path:
+    """Prefer best-v1 → best → last-v1 → last."""
+    for name in ("best-v1.ckpt", "best.ckpt", "last-v1.ckpt", "last.ckpt"):
+        p = fold_dir / name
+        if p.exists():
+            return p
+    raise FileNotFoundError(
+        f"No checkpoint found in {fold_dir} (checked best-v1.ckpt, best.ckpt, last-v1.ckpt, last.ckpt).")
 
 # Data and Test Model
 def smiles_to_mols_and_mask(df: pd.DataFrame, smiles_col: str) -> Tuple[List, np.ndarray]:
@@ -196,8 +250,8 @@ def main():
         models_dir = cfg.base_root / "models" / split
         for fold in folds:
             fold_dir = models_dir / f"fold_{fold}"
-            ckpt = fold_dir / "best-v1.ckpt"
-            print(f"  - fold {fold}: {ckpt}")
+            ckpt = pick_checkpoint(fold_dir)
+            print(f"  - fold {fold}: using {ckpt}")
 
             # Data
             test_csv = find_test_csv(cfg.base_root, split, fold)

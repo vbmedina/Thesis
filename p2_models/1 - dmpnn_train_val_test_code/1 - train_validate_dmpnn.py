@@ -1,28 +1,32 @@
 '''
-Description: This script trains and validate Chemprop DMPNN model for pIC50 across multiple data-split strategies while saving 
-best ad last checkpoints.
+Train & validate a Chemprop D-MPNN for pIC50 across multiple data-split strategies, 
+saving both best and last checkpoints.
 
-Requirements:
-    * Split CSVs from Data Splitting preprocessing step: "~/p2_models/input_data/split_data/{split}" with required columns:
-    "Smiles", "pIC50"
+Requirements
+- Pre-split CSVs from the data-splitting step: ./p2_models/input_data/split_data/{split}/
+- Required columns: "Smiles", "pIC50"
 
-Procedure:
-1) For each split in ["random", "scaffold", "butina", "umap_kmeans", "umap_ward"]
-   and each fold k=1-5
+Splits & Folds
+- Splits: ["random", "scaffold", "butina", "umap_kmeans", "umap_ward"]
+- Folds: k = 1..5 per split
+
+Procedure
+1) For each (split, fold):
    a. Load train/val CSVs.
    b. Featurize molecules with Chemprop's SimpleMoleculeMolGraphFeaturizer.
-   c. Normalize targets using the TRAIN set's scaler; apply the same scaler to val.
-      (Predictions are unscaled back to the original pIC50 space via an UnscaleTransform.)
-   d. Build a Chemprop DMPNN: BondMessagePassing to MeanAggregation to RegressionFFN,
-      with metrics RMSE/MSE/MAE.
+   c. Fit a target scaler on TRAIN; apply the same scaler to VAL.
+      (Predictions are unscaled back to pIC50 via an UnscaleTransform.)
+   d. Build a Chemprop D-MPNN: BondMessagePassing → MeanAggregation → RegressionFFN,
+      optimizing RMSE/MSE/MAE.
    e. Train with PyTorch Lightning:
-        - Early stopping on "val/rmse" (patience=15)
-        - Checkpoint the best model (min val/rmse)
+      - Early stopping on "val/rmse" (patience = 15)
+      - Checkpoint the best model (min "val/rmse")
 
-OUTPUTS (per split and fold)
-Directory: ~/p2_models/models/<split>/fold_<i>/
-    * best.ckpt (Lightning checkpoint) and last.ckpt
-    * TensorBoard logs (view with: tensorboard --logdir ~/p2_models/models/<split>)
+Outputs (per split & fold)
+- Directory: ~/p2_models/models/<split>/fold_<k>/
+  * best.ckpt (best validation RMSE)
+  * last.ckpt (last training state)
+  * TensorBoard logs (view with: tensorboard --logdir ~/p2_models/models/<split>)
 '''
 from pathlib import Path
 import pandas as pd

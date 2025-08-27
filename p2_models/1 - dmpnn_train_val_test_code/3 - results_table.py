@@ -1,40 +1,59 @@
-"""
-compute_early_recognition_rows.py
+'''
+Compute early-recognition Top-K metrics (hit rate, enrichment factor, MCC) from per-fold prediction CSVs.
 
-Compute early-recognition metrics on saved prediction CSVs **without deduplicating**.
-Each row is one assay/measurement. Sort rows by predicted pIC50 (desc) and
-evaluate on the top-K rows (and top-K%).
+Requirements
+- Per-fold prediction files produced by the evaluation step:
+  ./p2_models/models/<split>/fold_<k>/
+    * pred_vs_true_fold_test.csv
+    * pred_vs_true_sexual_data.csv
+- Required columns in each file: "y_true", "y_pred"
 
-Inputs expected per model:
-  models/<split>/fold_<n>/pred_vs_true_fold_test.csv
-  models/<split>/fold_<n>/pred_vs_true_sexual_data.csv
-  (each CSV must have y_true and y_pred columns; Smiles optional)
+Splits & Folds
+- Splits are discovered under ./p2_models/models/ unless restricted via --splits.
+- Folds are discovered as fold_* unless restricted via --folds.
+- Datasets evaluated per fold: ["fold_test", "sexual_data"] (skips missing files).
 
-Metrics (row-level, no dedup):
-  - HitRate@K     = TP@K / K, positives defined by y_true >= threshold
-  - EF@K          = HitRate@K / prevalence
-  - MCC@K         = MCC where predicted positives are the top-K rows
-  - HitRate@K% / EF@K% / MCC@K% with K% = ceil(frac * N_rows)
+Metrics (computed on valid rows, keeping any replicates)
+- Absolute Top-K (@K):
+  * hit_at_k        = TP@K / K
+  * ef_at_k         = hit_at_k / prevalence
+  * mcc_at_k        = MCC when classifying only the Top-K as positive
+- Fractional Top-K% (@K%):
+  * hit_at_kpct, ef_at_kpct, mcc_at_kpct (same definitions using K% of rows)
+- Additional fields:
+  * prevalence, k_used, k_pct_used, n_rows
+  * n_actives_total, n_inactives_total
+  * tp_at_k, expected_tp_at_k (= prevalence * K)
+  * tp_at_kpct, expected_tp_at_kpct
+- Positives are defined by a pIC50 threshold (default 6.0): y_true ≥ threshold.
 
-Also saved (for clarity):
-  - n_rows               : total rows (assay-level entries) in the test CSV
-  - n_actives_total      : total # of rows with y_true >= threshold
-  - n_inactives_total    : total # of rows with y_true < threshold
-  - prevalence           : n_actives_total / n_rows
-  - k_used               : min(K, n_rows)
-  - k_pct_used           : ceil(k_frac * n_rows)
-  - tp_at_k              : # of true actives inside the top-K rows
-  - expected_tp_at_k     : prevalence * k_used (what random selection would yield)
-  - tp_at_kpct           : # of true actives inside the top-K% rows
-  - expected_tp_at_kpct  : prevalence * k_pct_used
+Procedure
+1) Traverse ./p2_models/models/<split>/fold_<k>/ (optionally filtered by --splits/--folds).
+2) For each dataset tag in {"fold_test","sexual_data"}:
+   a. Load pred_vs_true_{tag}.csv.
+   b. Sort rows by y_pred descending.
+   c. Compute Top-K and Top-K% metrics.
+3) Concatenate per-fold rows and write a single CSV.
 
-Usage:
-  python compute_early_recognition_rows.py \
-    --base-root ./p2_models \
-    --k 100 --k-frac 0.05 --threshold 6.0 \
-    --splits random,scaffold,butina,umap_kmeans,umap_ward \
-    --folds 1,2,3,4,5
-"""
+Command-line Arguments
+- --base-root     (default: ./p2_models)
+- --out-dir-name  (default: analysis_outputs)
+- --threshold     (float, default: 6.0)
+- --k             (int absolute K, default: 100)
+- --k-frac        (fractional K%, default: 0.05 for 5%; uses ceil, min 1 row)
+- --splits        (comma-separated list to restrict splits, e.g., "random,scaffold")
+- --folds         (comma-separated ints to restrict folds, e.g., "1,2,3")
+
+Outputs
+- ./p2_models/analysis_outputs/topk_metrics_by_split_fold_rows.csv
+  Columns include: split, fold, dataset, hit_at_k/ef_at_k/mcc_at_k,
+  hit_at_kpct/ef_at_kpct/mcc_at_kpct, prevalence, k_used, k_pct_used, n_rows, and counts.
+
+Notes
+- K is clamped to [1, N]; K% uses ceil(max(1, k_frac * N)).
+- Files missing for a given (split, fold, tag) are skipped gracefully.
+- Exits with a message if no prediction CSVs are found.
+'''
 from __future__ import annotations
 import argparse, math
 from dataclasses import dataclass
