@@ -1,4 +1,43 @@
-# plot_25_rmse_sns_reds.py
+'''
+This script plots per-epoch RMSE curves (train & val) for each split/fold from training logs, and save one PNG per run.
+
+Requirements
+- One CSV per run at: <base>/\<split>/fold_<k>/metrics_per_epoch.csv
+  * Must contain: "epoch"
+  * Optional (used if present): "train/rmse", "val/rmse"
+
+Splits & Folds
+- Fixed split order: ["random", "scaffold", "butina", "umap_kmeans", "umap_ward"]
+- Folds are provided via --folds (default "1,2,3,4,5")
+- Plot titles use pretty names: Random, Scaffold, Butina, UMAP (kmeans), UMAP (ward)
+
+What it does
+1) Loads each metrics_per_epoch.csv, keeps the last record per epoch (handles repeated epochs),
+   and casts "epoch" to int.
+2) Draws RMSE vs epoch lines using seaborn/matplotlib:
+   - Train curve: semi-transparent line (if "train/rmse" exists)
+   - Validation curve: solid line (if "val/rmse" exists)
+   - Best validation epoch (min "val/rmse"): vertical dashed line + point marker
+3) Uses a consistent Reds palette—one distinct shade per split; no legend.
+4) Saves figures to the output folder with informative filenames.
+
+Command-line Arguments
+- --base   Path to the models root containing split/fold dirs
+           (default: /Users/victoriamedina/Thesis_Project/thesis/p2_models/models)
+- --out    Output directory for PNGs
+           (default: /Users/victoriamedina/Thesis_Project/thesis/p2_models/analysis_outputs/figures)
+- --folds  Comma-separated list of fold indices to plot (default: 1..5)
+
+Outputs
+- One PNG per (split, fold) that has a valid CSV:
+  <out>/loss_rmse_<split>_fold_<k>.png
+
+Notes
+- Runs are skipped if the CSV is missing or lacks both "train/rmse" and "val/rmse".
+- Axes use a white-grid theme; titles are "RMSE per Epoch: <Split> Fold <k>".
+- The script prints which files were saved and a final count of generated figures.
+'''
+
 from __future__ import annotations
 from pathlib import Path
 import argparse, re

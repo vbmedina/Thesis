@@ -1,7 +1,45 @@
-#!/usr/bin/env python3
-# Save FIVE separate PNGs:
-# 1) HitRate@100, 2) EF@100, 3) RMSE, 4) Spearman ρ, 5) ΔHitRate@100
-# Legends are placed on the RIGHT of each figure.
+'''
+This script creates summary bar charts for early-recognition (Top-K) and core metrics by the 
+top ranking models split.
+
+Requirements
+- Aggregated Top-K metrics CSV: p2_models/analysis_outputs/topk_metrics_by_split_fold_rows.csv
+  * Required columns: "split", "dataset", "hit_at_k", "ef_at_k"
+- Aggregated core metrics CSV: p2_models/analysis_outputs/all_metrics_by_split_fold_core.csv
+  * Required columns: "split", "dataset", "rmse", "spearman_rho"
+
+Splits & Datasets
+- Fixed left-to-right split order: ["random", "scaffold", "butina", "umap_kmeans", "umap_ward"]
+  (only splits present in the CSVs are plotted)
+- Datasets: "fold_test" (Asexual) vs "sexual_data" (Sexual)
+
+What it plots
+1) HitRate@100 (mean ± SD across folds) — Asexual vs Sexual
+2) EF@100 (mean ± SD) — Asexual vs Sexual
+3) RMSE (pIC50) (mean ± SD) — Asexual vs Sexual
+4) Spearman (rho) (mean ± SD) — Asexual vs Sexual, with a zero reference line
+5) ΔHit@100 (Sexual - Asexual) — one bar per split
+
+Procedure
+1) Load both CSVs and validate required columns.
+2) Group by ["split","dataset"] and compute mean and standard deviation.
+3) Reorder splits according to SPLIT_ORDER and drop any missing ones.
+4) Render grouped bar charts with error bars (±SD) and a separate delta chart.
+5) Save figures as PNGs to the output directory.
+
+Outputs
+- p2_models/analysis_outputs/figures/
+  * panel_hit_at_100.png
+  * panel_ef_at_100.png
+  * panel_rmse.png
+  * panel_spearman.png
+  * panel_delta_hit_at_100.png
+
+Notes
+- Colors/labels and styling are defined at the top of the script (Asexual = fold_test, Sexual = external).
+- The script will raise if the required CSVs are missing or lack required columns.
+- Adjust SPLIT_ORDER/SPLIT_LABELS to change ordering or display names.
+'''
 
 from pathlib import Path
 import numpy as np

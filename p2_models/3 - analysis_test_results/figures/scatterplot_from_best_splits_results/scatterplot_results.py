@@ -1,9 +1,52 @@
-# FIRST
+'''
+This script creates two-panel scatter plots of measured vs predicted pIC50 for selected split/fold runs,
+with regression fit, threshold guides, quadrant counts, and a metrics table.
 
-#!/usr/bin/env python3
-# Two-panel (Asexual vs Sexual) scatter for your chosen models only,
-# with regression fit, right-side vertical legend, and metrics tables lower.
+Requirements
+- Prediction CSVs per run at: p2_models/models/<split>/fold_<k>/
+  * pred_vs_true_fold_test.csv
+  * pred_vs_true_sexual_data.csv
+- Each CSV must contain: "y_true", "y_pred"
 
+Selection & Settings
+- The script plots only the (split, fold) pairs listed in SELECTED.
+- Threshold for activity: THRESHOLD = 6.0 (used for quadrants/MCC/ROC AUC/Hit@K)
+- Top-K for early recognition: TOP_K = 100 (HitRate@100)
+- Pretty labels for splits are defined in SPLIT_PRETTY.
+
+What it draws (per selected split/fold)
+- Two side-by-side panels:
+  * Left: Asexual (fold test)
+  * Right: Sexual (external)
+- Scatter of measured vs predicted pIC50 (tinted background).
+- Reference lines:
+  * Ideal line y = x (dashed)
+  * Vertical & horizontal lines at the pIC50 threshold.
+- Linear regression fit (y_pred ≈ a + b * y_true) with equation and R² in the legend.
+- Confusion quadrant annotations (TP/FP/TN/FN) at the four corners.
+- A metrics table placed below each panel with:
+  * HitRate@100
+  * MCC (at threshold)
+  * ROC AUC (binary, y_true ≥ threshold as positive)
+  * RMSE
+
+Procedure
+1) Load predictions for each (split, fold) in SELECTED (both fold_test and sexual_data).
+2) For each dataset:
+   a. Compute TP, FP, TN, FN at THRESHOLD.
+   b. Compute Hit@K (K = TOP_K), MCC, ROC AUC (if both classes present), and RMSE.
+   c. Fit a simple linear model and compute R².
+   d. Render the annotated scatter panel and the metrics table below the axes.
+3) Save one PNG per (split, fold) with both panels.
+
+Outputs
+- p2_models/analysis_outputs/figures/scatter_true_vs_pred_<split>_fold<k>.png
+
+Notes
+- Missing or malformed CSVs are skipped with a console message.
+- Hit@K clamps K to dataset size; ROC AUC is reported as “—” if only one class is present.
+- Colors use a Reds palette; adjust PALETTE/PT_COLOR/IDEAL_CLR/FIT_CLR/BG_TINT to restyle.
+'''
 from pathlib import Path
 import numpy as np
 import pandas as pd
