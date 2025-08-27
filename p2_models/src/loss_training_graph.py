@@ -1,87 +1,102 @@
-# plot_training_curves.py
+# plot_25_rmse_sns_reds.py
+from __future__ import annotations
 from pathlib import Path
-import pandas as pd
+import argparse, re
 import numpy as np
+import pandas as pd
+import seaborn as sns
 import matplotlib.pyplot as plt
 
-def plot_curves(base_models_dir: Path, split: str, fold: int, metrics=("rmse","mae","mse")):
-    """
-    Make per-epoch plots for the chosen model: train & val curves, and mark best val.
-    Saves PNGs next to the checkpoint.
-    """
-    fold_dir = Path(base_models_dir) / split / f"fold_{fold}"
-    log_csv  = fold_dir / "metrics_per_epoch.csv"
-    if not log_csv.exists():
-        raise FileNotFoundError(f"Missing: {log_csv}")
+SP_ORDER = ["random", "scaffold", "butina", "umap_kmeans", "umap_ward"]
+REQUIRED_FILE = "metrics_per_epoch.csv"
 
-    df = pd.read_csv(log_csv)
+def pretty_split_name(s: str) -> str:
+    # "umap_kmeans" -> "Umap kmeans"
+    return s.replace("_", " ").capitalize()
 
-    # Some loggers write multiple rows per epoch (steps + epoch summary).
-    # Take the last row per epoch to represent the epoch summary.
+def read_per_epoch(csv_path: Path) -> pd.DataFrame:
+    df = pd.read_csv(csv_path)
     df = df[df["epoch"].notna()].copy()
     df["epoch"] = df["epoch"].astype(int)
-    per_epoch = df.groupby("epoch", as_index=False).last()
+    return df.groupby("epoch", as_index=False).last()
 
-    def smooth(s, w=1):
-        # rolling average for nicer curves; set w=1 to disable smoothing
-        return s.rolling(w, min_periods=1, center=True).mean()
+def plot_one(base_models_dir: Path, out_dir: Path, split: str, fold: int, color):
+    fold_dir = Path(base_models_dir) / split / f"fold_{fold}"
+    csv_path = fold_dir / REQUIRED_FILE
+    if not csv_path.exists():
+        print(f"[skip] missing {csv_path}")
+        return False
 
-    for metric in metrics:
-        tcol = f"train/{metric}"
-        vcol = f"val/{metric}"
-        have_any = (tcol in per_epoch.columns) or (vcol in per_epoch.columns)
-        if not have_any:
-            continue
+    per_epoch = read_per_epoch(csv_path)
 
-        plt.figure()
-        x = per_epoch["epoch"]
+    sns.set_theme(style="whitegrid")
+    plt.figure(figsize=(6, 4))
 
-        if tcol in per_epoch.columns:
-            plt.plot(x, smooth(per_epoch[tcol], w=1), label="train")
+    did_any = False
 
-        if vcol in per_epoch.columns:
-            yv = per_epoch[vcol]
-            plt.plot(x, smooth(yv, w=1), label="val")
-            # mark best val (minimum)
+    # Train line (lighter / transparent)
+    if "train/rmse" in per_epoch.columns:
+        sns.lineplot(x=per_epoch["epoch"], y=per_epoch["train/rmse"],
+                     color=color, alpha=0.55, linewidth=2)
+        did_any = True
+
+    # Val line (same hue, solid). Keep marker/line for best, but no text label.
+    if "val/rmse" in per_epoch.columns:
+        yv = per_epoch["val/rmse"]
+        sns.lineplot(x=per_epoch["epoch"], y=yv,
+                     color=color, linewidth=2.2)
+        if yv.notna().any():
             best_idx = int(np.nanargmin(yv.values))
             best_epoch = int(per_epoch.iloc[best_idx]["epoch"])
             best_val   = float(yv.iloc[best_idx])
-            plt.axvline(best_epoch, linestyle="--", alpha=0.7)
-            plt.scatter([best_epoch], [best_val], s=30, zorder=5)
-            plt.text(best_epoch, best_val, f"  best {metric.upper()}={best_val:.3f} @ {best_epoch}", va="bottom")
+            plt.axvline(best_epoch, linestyle="--", color=color, alpha=0.7)
+            plt.scatter([best_epoch], [best_val], s=35, zorder=5, color=color)
+        did_any = True
 
-        plt.xlabel("Epoch")
-        plt.ylabel(metric.upper())
-        plt.title(f"{split} · fold {fold} — {metric.upper()} per epoch")
-        plt.legend()
-        plt.tight_layout()
-
-        out_png = fold_dir / f"curve_{metric}.png"
-        plt.savefig(out_png, dpi=200)
+    if not did_any:
+        print(f"[skip] no RMSE columns in {csv_path}")
         plt.close()
-        print(f"saved {out_png}")
+        return False
 
-    # Optional: if your CSV has explicit 'train/loss' and 'val/loss', plot those too.
-    if {"train/loss","val/loss"}.intersection(per_epoch.columns):
-        plt.figure()
-        if "train/loss" in per_epoch.columns:
-            plt.plot(per_epoch["epoch"], per_epoch["train/loss"], label="train/loss")
-        if "val/loss" in per_epoch.columns:
-            yv = per_epoch["val/loss"]
-            plt.plot(per_epoch["epoch"], yv, label="val/loss")
-            best_idx = int(np.nanargmin(yv.values))
-            be = int(per_epoch.iloc[best_idx]["epoch"])
-            bv = float(yv.iloc[best_idx])
-            plt.axvline(be, linestyle="--", alpha=0.7)
-            plt.scatter([be], [bv], s=30, zorder=5)
-            plt.text(be, bv, f"  best loss={bv:.3f} @ {be}", va="bottom")
-        plt.xlabel("Epoch"); plt.ylabel("LOSS"); plt.title(f"{split} · fold {fold} — Loss per epoch")
-        plt.legend(); plt.tight_layout()
-        out_png = Path(base_models_dir) / split / f"fold_{fold}" / "curve_loss.png"
-        plt.savefig(out_png, dpi=200); plt.close()
-        print(f"saved {out_png}")
+    split_title = pretty_split_name(split)
+    plt.title(f"{split_title} fold {fold} — RMSE per epoch")
+    plt.xlabel("Epoch")
+    plt.ylabel("RMSE")
+    # No legend
+    plt.tight_layout()
+
+    out_dir.mkdir(parents=True, exist_ok=True)
+    out_png = out_dir / f"loss_rmse_{split}_fold_{fold}.png"
+    plt.savefig(out_png, dpi=200)
+    plt.close()
+    print(f"saved {out_png}")
+    return True
+
+def main():
+    parser = argparse.ArgumentParser(description="Create 25 RMSE figures (5 splits × 5 folds) with Reds palette, no legend, capitalized titles.")
+    parser.add_argument("--base", type=Path,
+        default=Path("/Users/victoriamedina/Thesis_Project/thesis/p2_models/models"),
+        help="Path to .../p2_models/models")
+    parser.add_argument("--out", type=Path,
+        default=Path("/Users/victoriamedina/Thesis_Project/thesis/p2_models/analysis_outputs/figures"),
+        help="Where to save the 25 PNGs")
+    parser.add_argument("--folds", type=str, default="1,2,3,4,5",
+        help="Comma-separated folds to plot (default 1..5)")
+    args = parser.parse_args()
+
+    folds = [int(x) for x in args.folds.split(",") if x.strip()]
+    # Five distinct shades of red in the requested split order
+    reds = sns.color_palette("Reds", n_colors=len(SP_ORDER))
+    split_to_color = {sp: reds[i] for i, sp in enumerate(SP_ORDER)}
+
+    made = 0
+    for split in SP_ORDER:
+        color = split_to_color[split]
+        for f in folds:
+            ok = plot_one(args.base, args.out, split, f, color)
+            if ok:
+                made += 1
+    print(f"Completed: {made} figure(s).")
 
 if __name__ == "__main__":
-    # Example usage:
-    base = Path.home() / "Thesis" / "p2_models" / "models"
-    plot_curves(base_models_dir=base, split="butina", fold=1, metrics=("rmse","mae"))
+    main()
