@@ -19,8 +19,8 @@ df = pd.read_csv(in_path)
 before = len(df)                              
 
 # Define chemically plausible window for pIC50
-lower_bound = 4.0      #  pIC50  < 4  ⇒  IC50 > 100 uM  = biologically meaningless
-upper_bound = 11.0     #  pIC50  > 11 ⇒  IC50 < 0.01 nM = almost always an artefact
+lower_bound = 4.0
+upper_bound = 11.0
 
 # Drop pIC50 values outside of window
 df = df[df["pIC50"].between(lower_bound, upper_bound)].copy()
