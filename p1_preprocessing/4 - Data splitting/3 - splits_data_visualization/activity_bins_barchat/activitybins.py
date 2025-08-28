@@ -86,7 +86,7 @@ def make_panel_for_subset(subset: str):
             ax.text(0.02, 0.92, f"Total: {totals_map[key]:,}", transform=ax.transAxes,
                     ha="left", va="top", fontsize=10)
 
-    fig.suptitle(f"{TARGET} distribution by fold for each split ({subset} sets)", fontsize=16, y=0.975)
+    fig.suptitle(f"{TARGET} Distribution by Fold for Each Split ({subset} sets)", fontsize=16, y=0.975)
     fig.text(0.5, 0.02, f"{TARGET} bins", ha="center", fontsize=12)
     fig.text(0.05, 0.5, "Number of molecules", va="center", rotation=90, fontsize=12)
 
