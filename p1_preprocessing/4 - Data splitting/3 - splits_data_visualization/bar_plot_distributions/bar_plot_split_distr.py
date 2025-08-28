@@ -144,7 +144,7 @@ def make_plot(df: pd.DataFrame, out_path: Path):
     ax.set_ylabel("Number of rows", fontsize=12)
 
     # Suptitle
-    fig.suptitle("Split composition by method and fold (stacked Train / Validation / Test)", fontsize=15, y=0.98)
+    fig.suptitle("Split Composition by Method and Fold", fontsize=15, y=0.98)
     plt.subplots_adjust(top=0.90, bottom=0.22, left=0.08, right=0.85)
 
     # Handels for legend
