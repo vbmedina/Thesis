@@ -1,7 +1,4 @@
 ''' Description: This script is the second stage to the pipeline (IC50). It works on the IC50 scores.
-This script:
-1) deletes rows with implausible pIC50 values (above 11 or below 4)
-2) label rows as inactive, active, or high potency.
 
 Preconditions:
 1) "postphase2_CorrectpIC50.csv" - generated from stage2 pt4'''
