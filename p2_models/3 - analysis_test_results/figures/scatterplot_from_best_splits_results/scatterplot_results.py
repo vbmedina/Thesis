@@ -152,7 +152,7 @@ def annotate_quadrants(ax, tp, fp, tn, fn):
 
 def metrics_table_below(ax, hit, mcc_v, roc, rmse_v):
     """Place the table further *below* the axes so it doesn't crowd the plot."""
-    cols = ["Fit rate", "MCC", "ROC AUC", "RMSE"]
+    cols = ["Hit rate", "MCC", "ROC AUC", "RMSE"]
     vals = [f"{hit*100:.1f}%", f"{mcc_v:.3f}", f"{roc:.3f}" if not np.isnan(roc) else "—", f"{rmse_v:.3f}"]
     # bbox: [left, bottom, width, height] in axes coords; bottom < 0 puts it below.
     # moved lower (bottom=-0.62) and a bit taller (height=0.34)
