@@ -141,7 +141,7 @@ def make_plot(df: pd.DataFrame, out_path: Path):
     for t in ax_top.get_xticklabels():
         t.set_fontweight("semibold")
 
-    ax.set_ylabel("Number of molecules", fontsize=12)
+    ax.set_ylabel("Number of Molecules", fontsize=12)
 
     # Suptitle
     fig.suptitle("Split Composition by Method and Fold", fontsize=15, y=0.98)
