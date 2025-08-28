@@ -64,7 +64,7 @@ SMILES_COL = "Smiles"
 TARGET_COL = "pIC50"
 THRESHOLD = 6.0
 NUM_WORKERS = 0
-SEED = 1337
+SEED = 2858808528
 
 TARGET_MODELS = {
     "random":      1,
