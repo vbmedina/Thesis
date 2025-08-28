@@ -56,8 +56,8 @@ from sklearn.metrics import roc_auc_score, mean_squared_error
 from math import sqrt
 
 # --------- CONFIG ---------
-BASE_MODELS = Path("p2_models/models")
-OUT_DIR     = Path("p2_models/analysis_outputs/figures")
+BASE_MODELS = Path("p2_models/2 - train_val_test_results")
+OUT_DIR     = Path("p2_models/analysis__test_results/scatterplot_from_best_splits_results")
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
 # Only these split/fold pairs will be plotted:
@@ -152,7 +152,7 @@ def annotate_quadrants(ax, tp, fp, tn, fn):
 
 def metrics_table_below(ax, hit, mcc_v, roc, rmse_v):
     """Place the table further *below* the axes so it doesn't crowd the plot."""
-    cols = ["hit rate", "MCC", "ROC AUC", "RMSE"]
+    cols = ["Fit rate", "MCC", "ROC AUC", "RMSE"]
     vals = [f"{hit*100:.1f}%", f"{mcc_v:.3f}", f"{roc:.3f}" if not np.isnan(roc) else "—", f"{rmse_v:.3f}"]
     # bbox: [left, bottom, width, height] in axes coords; bottom < 0 puts it below.
     # moved lower (bottom=-0.62) and a bit taller (height=0.34)
@@ -216,7 +216,7 @@ for split, fold in SELECTED:
     fig, axes = plt.subplots(1, 2, figsize=(12.5, 7.0))
     # big label on top with split name + fold
     split_name = SPLIT_PRETTY.get(split, split.replace("_", " "))
-    fig.suptitle(f"Split: {split_name} — fold {fold}", fontsize=16, y=0.95)
+    fig.suptitle(f"Split: {split_name} — Fold {fold}", fontsize=16, y=0.95)
 
     draw_panel(axes[0], df_asex, "Asexual (fold test)")
     draw_panel(axes[1], df_sex,  "Sexual (external)")
