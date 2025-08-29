@@ -40,111 +40,139 @@ Notes
 
 from __future__ import annotations
 from pathlib import Path
-import argparse, re
-import numpy as np
+import argparse
+import gzip
+import re
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 
 SP_ORDER = ["random", "scaffold", "butina", "umap_kmeans", "umap_ward"]
-REQUIRED_FILE = "metrics_per_epoch.csv"
+PRETTY = {
+    "random": "Random",
+    "scaffold": "Scaffold",
+    "butina": "Butina",
+    "umap_kmeans": "UMAP (kmeans)",
+    "umap_ward": "UMAP (ward)",
+}
 
-def pretty_split_name(s: str) -> str:
-    # Exact titles per split
-    mapping = {
-        "random":       "Random",
-        "scaffold":     "Scaffold",
-        "butina":       "Butina",
-        "umap_kmeans":  "UMAP (kmeans)",
-        "umap_ward":    "UMAP (ward)",
-    }
-    # fallback: title-case with spaces if an unexpected name appears
-    return mapping.get(s, s.replace("_", " ").title())
+# Anything matching these is considered a learning-rate column
+LR_REGEXES = [
+    re.compile(r"(^|[\/\-\_:])lr($|[\/\-\_:]\d+?$)"),   # lr, lr-Adam, lr-0, foo/lr
+    re.compile(r"learning[_/ \-]?rate"),               # learning_rate, learning-rate
+]
 
-def read_per_epoch(csv_path: Path) -> pd.DataFrame:
-    df = pd.read_csv(csv_path)
-    df = df[df["epoch"].notna()].copy()
-    df["epoch"] = df["epoch"].astype(int)
-    return df.groupby("epoch", as_index=False).last()
+METRIC_CANDIDATES = [
+    "metrics_per_epoch.csv",
+    "metrics_per_epoch.tsv",
+    "metrics.csv",
+    "metrics_per_step.csv",
+    "metrics*.csv",
+    "metrics*.csv.gz",
+    "metrics*.tsv",
+    "metrics*.tsv.gz",
+    "metrics_per_epoch",  # no extension
+]
 
-def plot_one(base_models_dir: Path, out_dir: Path, split: str, fold: int, color):
-    fold_dir = Path(base_models_dir) / split / f"fold_{fold}"
-    csv_path = fold_dir / REQUIRED_FILE
-    if not csv_path.exists():
-        print(f"[skip] missing {csv_path}")
-        return False
+def pretty_split(s: str) -> str:
+    return PRETTY.get(s, s.replace("_", " ").title())
 
-    per_epoch = read_per_epoch(csv_path)
+def _open_text(path: Path):
+    if path.suffix == ".gz":
+        return gzip.open(path, "rt")
+    return open(path, "rt")
 
+def _sep_for(path: Path) -> str:
+    # tsv if final suffix (or inner suffix for .gz) is .tsv
+    suf = path.suffix.lower()
+    inner = Path(path.stem).suffix.lower() if suf == ".gz" else suf
+    return "\t" if inner == ".tsv" else ","
+
+def _find_lr_cols(columns) -> list[str]:
+    cols = []
+    for c in columns:
+        lc = str(c).lower()
+        for rx in LR_REGEXES:
+            if rx.search(lc):
+                cols.append(c)
+                break
+    return cols
+
+def _read_df(path: Path) -> pd.DataFrame:
+    with _open_text(path) as f:
+        return pd.read_csv(f, sep=_sep_for(path))
+
+def _group_last_per_epoch(df: pd.DataFrame) -> pd.DataFrame:
+    if "epoch" not in df.columns:
+        raise ValueError('No "epoch" column found.')
+    d = df[df["epoch"].notna()].copy()
+    d["epoch"] = d["epoch"].astype(int)
+    # keep last record per epoch
+    return d.groupby("epoch", as_index=False).last()
+
+def find_lr_source_df(run_dir: Path) -> tuple[pd.DataFrame, str] | tuple[None, None]:
+    """
+    Look for a file in run_dir that has both 'epoch' and at least one LR column.
+    Returns (df, lr_col_name_to_use) or (None, None)
+    """
+    # First try specific filenames, then globs
+    files = []
+    for name in METRIC_CANDIDATES:
+        if "*" in name:
+            files += sorted(run_dir.glob(name))
+        else:
+            p = run_dir / name
+            if p.exists():
+                files.append(p)
+
+    seen = set()
+    for p in files:
+        if p in seen: 
+            continue
+        seen.add(p)
+        try:
+            df = _read_df(p)
+        except Exception:
+            continue
+
+        if "epoch" not in df.columns:
+            continue
+
+        lr_cols = _find_lr_cols(df.columns)
+        if not lr_cols:
+            # maybe it's per-epoch metrics with no LR; skip
+            continue
+
+        # Prefer a single stable column: choose the first sorted by name
+        lr_cols_sorted = sorted(lr_cols, key=lambda x: str(x))
+        lr_col = lr_cols_sorted[0]
+        # collapse to last row per epoch (handles per-step logging)
+        per_epoch = _group_last_per_epoch(df[["epoch", lr_col]].copy())
+        # guard: drop rows with all-NaN LR
+        if per_epoch[lr_col].notna().any():
+            return per_epoch, lr_col
+
+    return None, None
+
+def plot_lr_combo(base_dir: Path, out_dir: Path, runs: list[tuple[str, int]], logy: bool = True) -> bool:
     sns.set_theme(style="whitegrid")
-    plt.figure(figsize=(6, 4))
-
-    did_any = False
-
-    # Train line (lighter / transparent)
-    if "train/rmse" in per_epoch.columns:
-        sns.lineplot(x=per_epoch["epoch"], y=per_epoch["train/rmse"],
-                     color=color, alpha=0.55, linewidth=2)
-        did_any = True
-
-    # Val line (same hue, solid). Keep marker/line for best, but no text label.
-    if "val/rmse" in per_epoch.columns:
-        yv = per_epoch["val/rmse"]
-        sns.lineplot(x=per_epoch["epoch"], y=yv,
-                     color=color, linewidth=2.2)
-        if yv.notna().any():
-            best_idx = int(np.nanargmin(yv.values))
-            best_epoch = int(per_epoch.iloc[best_idx]["epoch"])
-            best_val   = float(yv.iloc[best_idx])
-            plt.axvline(best_epoch, linestyle="--", color=color, alpha=0.7)
-            plt.scatter([best_epoch], [best_val], s=35, zorder=5, color=color)
-        did_any = True
-
-    if not did_any:
-        print(f"[skip] no RMSE columns in {csv_path}")
-        plt.close()
-        return False
-
-    split_title = pretty_split_name(split)
-    plt.title(f"RMSE per Epoch: {split_title} Fold {fold}", size=15)
-    plt.tight_layout()
-    plt.xlabel("Epoch", size=11)
-    plt.ylabel("RMSE", size=11)
-    # No legend
-    plt.tight_layout()
-
-    out_dir.mkdir(parents=True, exist_ok=True)
-    out_png = out_dir / f"loss_rmse_{split}_fold_{fold}.png"
-    plt.savefig(out_png, dpi=200)
-    plt.close()
-    print(f"saved {out_png}")
-    return True
-
-def main():
-    parser = argparse.ArgumentParser(description="Create 25 RMSE figures (5 splits × 5 folds) with Reds palette, no legend, capitalized titles.")
-    parser.add_argument("--base", type=Path,
-        default=Path("/Users/victoriamedina/Thesis_Project/thesis/p2_models/models"),
-        help="Path to .../p2_models/models")
-    parser.add_argument("--out", type=Path,
-        default=Path("/Users/victoriamedina/Thesis_Project/thesis/p2_models/analysis_outputs/figures"),
-        help="Where to save the 25 PNGs")
-    parser.add_argument("--folds", type=str, default="1,2,3,4,5",
-        help="Comma-separated folds to plot (default 1..5)")
-    args = parser.parse_args()
-
-    folds = [int(x) for x in args.folds.split(",") if x.strip()]
-    # Five distinct shades of red in the requested split order
+    plt.figure(figsize=(8, 5))
     reds = sns.color_palette("Reds", n_colors=len(SP_ORDER))
-    split_to_color = {sp: reds[i] for i, sp in enumerate(SP_ORDER)}
+    color_map = {sp: reds[i] for i, sp in enumerate(SP_ORDER)}
 
-    made = 0
-    for split in SP_ORDER:
-        color = split_to_color[split]
-        for f in folds:
-            ok = plot_one(args.base, args.out, split, f, color)
-            if ok:
-                made += 1
-    print(f"Completed: {made} figure(s).")
+    drew_any = False
+    for split, fold in runs:
+        run_dir = base_dir / split / f"fold_{fold}"
+        df, lr_col = find_lr_source_df(run_dir)
+        if df is None:
+            print(f"[skip] no LR data found under {run_dir}")
+            continue
 
-if __name__ == "__main__":
-    main()
+        label = f"{pretty_split(split)} (fold {fold})"
+        plt.plot(df["epoch"], df[lr_col], linewidth=2.2, alpha=0.95, label=label, color=color_map.get(split))
+        drew_any = True
+
+    if not drew_any:
+        print("No learning-rate curves were plotted. Make sure LR is being logged.")
+        plt.close()
+        re
