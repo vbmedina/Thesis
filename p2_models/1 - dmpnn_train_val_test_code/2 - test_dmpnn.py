@@ -78,7 +78,6 @@ class Config:
 
 # Helpers for finding paths to checkpoints (best-v1/best/last-v1/last)
 def discover_splits_and_folds(base_root: Path) -> Dict[str, List[int]]:
-    """Find all <split>/fold_<n>/ that contain any checkpoint under <base_root>/models."""
     models_root = base_root / "models"
     if not models_root.exists():
         raise FileNotFoundError(f"Missing models dir: {models_root}")
@@ -105,7 +104,7 @@ def discover_splits_and_folds(base_root: Path) -> Dict[str, List[int]]:
 
 # Helpers for finding paths to test
 def find_test_csv(base_root: Path, split: str, fold: int) -> Path:
-    split_dir = base_root / "input_data" / "split_data" / split
+    split_dir = base_root / "0 - input_data" / "split_data" / split
     for name in (f"{split}_fold_{fold}_test.csv", f"{split}_fold{fold}_test.csv"):
         p = split_dir / name
         if p.exists():
@@ -114,7 +113,6 @@ def find_test_csv(base_root: Path, split: str, fold: int) -> Path:
 
 # Helper find checkpoint
 def pick_checkpoint(fold_dir: Path) -> Path:
-    """Prefer best-v1 → best → last-v1 → last."""
     for name in ("best-v1.ckpt", "best.ckpt", "last-v1.ckpt", "last.ckpt"):
         p = fold_dir / name
         if p.exists():

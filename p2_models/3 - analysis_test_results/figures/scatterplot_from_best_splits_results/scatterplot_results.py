@@ -57,7 +57,7 @@ from math import sqrt
 
 # --------- CONFIG ---------
 BASE_MODELS = Path("p2_models/2 - train_val_test_results")
-OUT_DIR     = Path("p2_models/3 - analysis_test_results/scatterplot_from_best_splits_results")
+OUT_DIR     = Path("p2_models/3 - analysis_test_results/figures/scatterplot_from_best_splits_results")
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
 # Only these split/fold pairs will be plotted:
@@ -79,7 +79,7 @@ SPLIT_PRETTY = {
 }
 
 THRESHOLD = 6.0
-TOP_K     = 100  # for HitRate@100
+TOP_K     = 100
 
 # Reds palette
 PALETTE    = sns.color_palette("Reds", 6)
@@ -88,7 +88,6 @@ IDEAL_CLR  = "#666"                # y=x & threshold guides
 FIT_CLR    = "#000"                # regression fit
 BG_TINT    = "#fde8ea"             # light red backdrop
 
-# --------- I/O helpers ---------
 def load_preds(split: str, fold: int, tag: str) -> pd.DataFrame:
     fn = "pred_vs_true_fold_test.csv" if tag == "fold_test" else "pred_vs_true_sexual_data.csv"
     p = BASE_MODELS / split / f"fold_{fold}" / fn

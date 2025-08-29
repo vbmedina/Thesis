@@ -38,11 +38,11 @@ Notes
 - The script prints which files were saved and a final count of generated figures.
 '''
 
+#!/usr/bin/env python3
 from __future__ import annotations
 from pathlib import Path
-import argparse
-import gzip
-import re
+import argparse, gzip
+import numpy as np
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -56,123 +56,156 @@ PRETTY = {
     "umap_ward": "UMAP (ward)",
 }
 
-# Anything matching these is considered a learning-rate column
-LR_REGEXES = [
-    re.compile(r"(^|[\/\-\_:])lr($|[\/\-\_:]\d+?$)"),   # lr, lr-Adam, lr-0, foo/lr
-    re.compile(r"learning[_/ \-]?rate"),               # learning_rate, learning-rate
-]
+FILE_CANDIDATES = ["metrics_per_epoch.csv"]
 
-METRIC_CANDIDATES = [
-    "metrics_per_epoch.csv",
-    "metrics_per_epoch.tsv",
-    "metrics.csv",
-    "metrics_per_step.csv",
-    "metrics*.csv",
-    "metrics*.csv.gz",
-    "metrics*.tsv",
-    "metrics*.tsv.gz",
-    "metrics_per_epoch",  # no extension
-]
+def _open(path: Path):
+    return gzip.open(path, "rt") if path.suffix == ".gz" else open(path, "rt")
 
-def pretty_split(s: str) -> str:
-    return PRETTY.get(s, s.replace("_", " ").title())
-
-def _open_text(path: Path):
-    if path.suffix == ".gz":
-        return gzip.open(path, "rt")
-    return open(path, "rt")
-
-def _sep_for(path: Path) -> str:
-    # tsv if final suffix (or inner suffix for .gz) is .tsv
+def _sep(path: Path) -> str:
     suf = path.suffix.lower()
     inner = Path(path.stem).suffix.lower() if suf == ".gz" else suf
     return "\t" if inner == ".tsv" else ","
 
-def _find_lr_cols(columns) -> list[str]:
-    cols = []
-    for c in columns:
-        lc = str(c).lower()
-        for rx in LR_REGEXES:
-            if rx.search(lc):
-                cols.append(c)
-                break
-    return cols
-
-def _read_df(path: Path) -> pd.DataFrame:
-    with _open_text(path) as f:
-        return pd.read_csv(f, sep=_sep_for(path))
-
-def _group_last_per_epoch(df: pd.DataFrame) -> pd.DataFrame:
-    if "epoch" not in df.columns:
-        raise ValueError('No "epoch" column found.')
-    d = df[df["epoch"].notna()].copy()
-    d["epoch"] = d["epoch"].astype(int)
-    # keep last record per epoch
-    return d.groupby("epoch", as_index=False).last()
-
-def find_lr_source_df(run_dir: Path) -> tuple[pd.DataFrame, str] | tuple[None, None]:
-    """
-    Look for a file in run_dir that has both 'epoch' and at least one LR column.
-    Returns (df, lr_col_name_to_use) or (None, None)
-    """
-    # First try specific filenames, then globs
-    files = []
-    for name in METRIC_CANDIDATES:
+def find_metrics_file(run_dir: Path) -> Path | None:
+    # try exact first, then globs
+    checks = []
+    for name in FILE_CANDIDATES:
         if "*" in name:
-            files += sorted(run_dir.glob(name))
+            checks += sorted(run_dir.glob(name))
         else:
             p = run_dir / name
-            if p.exists():
-                files.append(p)
+            if p.exists(): return p
+    return checks[0] if checks else None
 
-    seen = set()
-    for p in files:
-        if p in seen: 
-            continue
-        seen.add(p)
-        try:
-            df = _read_df(p)
-        except Exception:
-            continue
+def read_per_epoch(path: Path) -> pd.DataFrame:
+    with _open(path) as f:
+        df = pd.read_csv(f, sep=_sep(path))
+    if "epoch" not in df.columns:
+        raise ValueError(f'No "epoch" col in {path}')
+    df = df[df["epoch"].notna()].copy()
+    df["epoch"] = df["epoch"].astype(int)
+    # keep last row for each epoch
+    df = df.groupby("epoch", as_index=False).last().sort_values("epoch")
+    return df
 
-        if "epoch" not in df.columns:
-            continue
+def pick_val_rmse(df: pd.DataFrame) -> pd.Series | None:
+    # preferred columns in order
+    if "val/rmse" in df.columns and df["val/rmse"].notna().any():
+        return df["val/rmse"]
+    if "val/mse" in df.columns and df["val/mse"].notna().any():
+        return np.sqrt(df["val/mse"])
+    # cautious fallback: if only val_loss exists, try sqrt(val_loss)
+    if "val_loss" in df.columns and df["val_loss"].notna().any():
+        return np.sqrt(df["val_loss"])
+    # final fallback: training RMSE if validation is missing
+    if "train/rmse" in df.columns and df["train/rmse"].notna().any():
+        return df["train/rmse"]
+    if "train/mse" in df.columns and df["train/mse"].notna().any():
+        return np.sqrt(df["train/mse"])
+    return None
 
-        lr_cols = _find_lr_cols(df.columns)
-        if not lr_cols:
-            # maybe it's per-epoch metrics with no LR; skip
-            continue
+def rmse_to_learning_rate(rmse: pd.Series, smooth_window: int | None = 3) -> pd.Series:
+    # ΔRMSE per epoch: previous − current (positive = improvement)
+    rate = rmse.shift(1) - rmse
+    # optional simple smoothing to reduce noise
+    if smooth_window and smooth_window > 1:
+        rate = rate.rolling(window=smooth_window, min_periods=1, center=False).mean()
+    return rate
 
-        # Prefer a single stable column: choose the first sorted by name
-        lr_cols_sorted = sorted(lr_cols, key=lambda x: str(x))
-        lr_col = lr_cols_sorted[0]
-        # collapse to last row per epoch (handles per-step logging)
-        per_epoch = _group_last_per_epoch(df[["epoch", lr_col]].copy())
-        # guard: drop rows with all-NaN LR
-        if per_epoch[lr_col].notna().any():
-            return per_epoch, lr_col
-
-    return None, None
-
-def plot_lr_combo(base_dir: Path, out_dir: Path, runs: list[tuple[str, int]], logy: bool = True) -> bool:
+def plot_combo(base_dir: Path, out_dir: Path, runs: list[tuple[str, int]],
+               smooth_window: int = 3) -> None:
     sns.set_theme(style="whitegrid")
-    plt.figure(figsize=(8, 5))
     reds = sns.color_palette("Reds", n_colors=len(SP_ORDER))
     color_map = {sp: reds[i] for i, sp in enumerate(SP_ORDER)}
 
-    drew_any = False
+    # 1) Derived learning-rate (from RMSE deltas)
+    plt.figure(figsize=(8.5, 5))
+    drew = 0
     for split, fold in runs:
         run_dir = base_dir / split / f"fold_{fold}"
-        df, lr_col = find_lr_source_df(run_dir)
-        if df is None:
-            print(f"[skip] no LR data found under {run_dir}")
+        mpath = find_metrics_file(run_dir)
+        if not mpath:
+            print(f"[skip] metrics file missing in {run_dir}")
             continue
+        df = read_per_epoch(mpath)
+        y = pick_val_rmse(df)
+        if y is None:
+            print(f"[skip] no usable RMSE in {mpath}")
+            continue
+        rate = rmse_to_learning_rate(y, smooth_window=smooth_window)
+        label = f"{PRETTY.get(split, split)} (fold {fold})"
+        plt.plot(df["epoch"], rate, label=label, linewidth=2.2,
+                 alpha=0.95, color=color_map.get(split))
+        drew += 1
+    if drew == 0:
+        print("No curves plotted. Ensure your files have val/rmse or val/mse.")
+    plt.axhline(0.0, linestyle="--", linewidth=1.0, alpha=0.5)
+    plt.title("Rate of Learning from RMSE (ΔRMSE per epoch)", fontsize=15)
+    plt.xlabel("Epoch"); plt.ylabel("RMSE improvement per epoch  (↑ is better)")
+    plt.legend(title="Run", fontsize=9)
+    plt.tight_layout()
+    out_dir.mkdir(parents=True, exist_ok=True)
+    out_lr = out_dir / "learning_rate_from_rmse_selected.png"
+    plt.savefig(out_lr, dpi=220); plt.close()
+    print(f"saved {out_lr}")
 
-        label = f"{pretty_split(split)} (fold {fold})"
-        plt.plot(df["epoch"], df[lr_col], linewidth=2.2, alpha=0.95, label=label, color=color_map.get(split))
-        drew_any = True
+    # 2) Reference: combined RMSE curves
+    plt.figure(figsize=(8.5, 5))
+    drew = 0
+    for split, fold in runs:
+        run_dir = base_dir / split / f"fold_{fold}"
+        mpath = find_metrics_file(run_dir)
+        if not mpath:
+            continue
+        df = read_per_epoch(mpath)
+        y = pick_val_rmse(df)
+        if y is None:
+            continue
+        # mark best epoch (min RMSE)
+        best_idx = int(np.nanargmin(y.values))
+        best_epoch = int(df.iloc[best_idx]["epoch"])
+        best_val = float(y.iloc[best_idx])
+        label = f"{PRETTY.get(split, split)} (fold {fold})"
+        plt.plot(df["epoch"], y, label=label, linewidth=2.2,
+                 alpha=0.95, color=color_map.get(split))
+        plt.axvline(best_epoch, linestyle="--", alpha=0.4, color=color_map.get(split))
+        plt.scatter([best_epoch], [best_val], s=30, zorder=5, color=color_map.get(split))
+        drew += 1
+    if drew == 0:
+        print("No RMSE curves plotted.")
+    plt.title("Validation RMSE per Epoch: Selected Runs", fontsize=15)
+    plt.xlabel("Epoch"); plt.ylabel("RMSE")
+    plt.legend(title="Run", fontsize=9)
+    plt.tight_layout()
+    out_rmse = out_dir / "rmse_selected.png"
+    plt.savefig(out_rmse, dpi=220); plt.close()
+    print(f"saved {out_rmse}")
 
-    if not drew_any:
-        print("No learning-rate curves were plotted. Make sure LR is being logged.")
-        plt.close()
-        re
+def parse_runs(s: str) -> list[tuple[str, int]]:
+    runs = []
+    for tok in [t for t in s.split(",") if t.strip()]:
+        t = tok.strip().replace("=", ":").replace(" ", ":")
+        parts = [p for p in t.split(":") if p]
+        if len(parts) >= 2:
+            runs.append((parts[0], int(parts[1])))
+    return runs
+
+def main():
+    parser = argparse.ArgumentParser(description="Plot ΔRMSE-per-epoch (rate of learning) and RMSE for selected runs.")
+    parser.add_argument("--base", type=Path,
+        default=Path("/Users/victoriamedina/Thesis_Project/thesis/p2_models/2 - train_val_test_results"),
+        help="Root containing <split>/fold_<k>/metrics_per_epoch*")
+    parser.add_argument("--out", type=Path,
+        default=Path("./p2_models/3 - analysis_test_results/figures/rsme_loss_visuals"),
+        help="Where to save the PNGs")
+    parser.add_argument("--runs", type=str,
+        default="random:1,scaffold:1,butina:2,umap_kmeans:1,umap_ward:5",
+        help="Comma-separated split:fold pairs (spaces/= ok)")
+    parser.add_argument("--smooth", type=int, default=3,
+        help="Rolling window (epochs) to smooth ΔRMSE; 1 disables smoothing")
+    args = parser.parse_args()
+
+    plot_combo(args.base, args.out, parse_runs(args.runs), smooth_window=args.smooth)
+
+if __name__ == "__main__":
+    main()
