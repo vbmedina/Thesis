@@ -10,12 +10,6 @@ Requirements
 - External evaluation CSV: ./p2_models/input_data/sexual_test.csv
 - Required columns: "Smiles", "pIC50"
 
-Splits & Folds
-- Splits: ["random", "scaffold", "butina", "umap_kmeans", "umap_ward"]
-- Folds: The script evaluates whatever fold directories exist with a valid checkpoint.
-    (After step 1 (train and validate), user selects the top-k models per split by 
-    lowest RMSE with Spearman (rho) as the tiebreak.)
-
 Procedure
 1) Discover split/fold directories that contain any accepted checkpoint.
 2) For each (split, fold):
@@ -26,8 +20,6 @@ Procedure
    e. Compute metrics on valid rows:
       - RMSE
       - Spearman (rho)
-      - PR-AUC (treat y ≥ 6.0 pIC50 as positive)
-      - MCC at 6.0 pIC50
    f. Save per-fold prediction CSVs and (if any) invalid-SMILES CSVs.
 
 Outputs
@@ -58,8 +50,8 @@ from rdkit import Chem
 # CPU-only settings & paths
 DEVICE = torch.device("cpu") 
 BASE_ROOT = Path("./p2_models").expanduser()
-EXTERNAL_CSV = BASE_ROOT / "input_data" / "sexual_test.csv"
-OUT_DIR_NAME = "analysis_outputs"
+EXTERNAL_CSV = BASE_ROOT / "0 - input_data" / "sexual_test.csv"
+OUT_DIR_NAME = "3 - analysis_outputs"
 SMILES_COL = "Smiles"
 TARGET_COL = "pIC50"
 THRESHOLD = 6.0
