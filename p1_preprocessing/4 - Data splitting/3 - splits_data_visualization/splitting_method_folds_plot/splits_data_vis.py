@@ -3,7 +3,6 @@ This script generates a graphic which illustrates an overview of the data splitt
 - 5 splits (K = 1, 2, 3, 4, 5)
 - Each split shows 5 equal blocks (each 20% of total data)
 - The designated test block shifts from block 5 down to 1 across K fold
-- Validation: 10% of the TRAINING set
 
 No requirements
 """
@@ -85,9 +84,7 @@ legend_handles = [
     mpatches.Patch(facecolor=test_color, edgecolor="#cccccc",
                    label=f"Test {int(TEST_PCT*100)}% (≈ {test_n:,})"),
     mpatches.Patch(facecolor="#ffffff", edgecolor="#cccccc",
-                   label=f"Train {int(TRAIN_PCT*100)}% (≈ {train_n:,})"),
-    mpatches.Patch(facecolor="#ffffff", edgecolor="#666666", hatch="////", linewidth=1.0,
-                   label=f"Validation 10% of Total Data (≈ { val_n:,})\n ≈ {val_pct_of_total:.1f}% of Training Data")]
+                   label=f"Train {int(TRAIN_PCT*100)}% (≈ {train_n:,})")]
 
 leg = ax.legend(handles=legend_handles, bbox_to_anchor=(1.02, 1),
                 loc="upper left", borderaxespad=0.0)
