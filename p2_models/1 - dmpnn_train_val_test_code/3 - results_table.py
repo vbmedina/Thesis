@@ -35,15 +35,6 @@ Procedure
    c. Compute Top-K and Top-K% metrics.
 3) Concatenate per-fold rows and write a single CSV.
 
-Command-line Arguments
-- --base-root     (default: ./p2_models)
-- --out-dir-name  (default: analysis_outputs)
-- --threshold     (float, default: 6.0)
-- --k             (int absolute K, default: 100)
-- --k-frac        (fractional K%, default: 0.05 for 5%; uses ceil, min 1 row)
-- --splits        (comma-separated list to restrict splits, e.g., "random,scaffold")
-- --folds         (comma-separated ints to restrict folds, e.g., "1,2,3")
-
 Outputs
 - ./p2_models/analysis_outputs/topk_metrics_by_split_fold_rows.csv
   Columns include: split, fold, dataset, hit_at_k/ef_at_k/mcc_at_k,
@@ -201,7 +192,7 @@ def main():
         raise SystemExit("No prediction CSVs found. Expected pred_vs_true_{fold_test,sexual_data}.csv under models/<split>/fold_*/")
 
     per_df = pd.DataFrame(rows).sort_values(["split","fold","dataset"])
-    per_path = out_root / "topk_metrics_by_split_fold_rows.csv"
+    per_path = out_root / "overall_test_metrics_with_hit_rate.csv"
     per_df.to_csv(per_path, index=False)
     print("Wrote:", per_path)
 
