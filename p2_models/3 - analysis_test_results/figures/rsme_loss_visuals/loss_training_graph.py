@@ -58,8 +58,8 @@ PRETTY = {
 
 # Anything matching these is considered a learning-rate column
 LR_REGEXES = [
-    re.compile(r"(^|[\/\-\_:])lr($|[\/\-\_:]\d+?$)"),   # lr, lr-Adam, lr-0, foo/lr
-    re.compile(r"learning[_/ \-]?rate"),               # learning_rate, learning-rate
+    re.compile(r"(^|[\/\-\_:])lr($|[\/\-\_:]\d+?$)"),
+    re.compile(r"learning[_/ \-]?rate"),
 ]
 
 METRIC_CANDIDATES = [
@@ -71,7 +71,7 @@ METRIC_CANDIDATES = [
     "metrics*.csv.gz",
     "metrics*.tsv",
     "metrics*.tsv.gz",
-    "metrics_per_epoch",  # no extension
+    "metrics_per_epoch",
 ]
 
 def pretty_split(s: str) -> str:
@@ -83,7 +83,6 @@ def _open_text(path: Path):
     return open(path, "rt")
 
 def _sep_for(path: Path) -> str:
-    # tsv if final suffix (or inner suffix for .gz) is .tsv
     suf = path.suffix.lower()
     inner = Path(path.stem).suffix.lower() if suf == ".gz" else suf
     return "\t" if inner == ".tsv" else ","
@@ -110,11 +109,8 @@ def _group_last_per_epoch(df: pd.DataFrame) -> pd.DataFrame:
     # keep last record per epoch
     return d.groupby("epoch", as_index=False).last()
 
+# Look for files
 def find_lr_source_df(run_dir: Path) -> tuple[pd.DataFrame, str] | tuple[None, None]:
-    """
-    Look for a file in run_dir that has both 'epoch' and at least one LR column.
-    Returns (df, lr_col_name_to_use) or (None, None)
-    """
     # First try specific filenames, then globs
     files = []
     for name in METRIC_CANDIDATES:
@@ -140,20 +136,17 @@ def find_lr_source_df(run_dir: Path) -> tuple[pd.DataFrame, str] | tuple[None, N
 
         lr_cols = _find_lr_cols(df.columns)
         if not lr_cols:
-            # maybe it's per-epoch metrics with no LR; skip
             continue
 
-        # Prefer a single stable column: choose the first sorted by name
         lr_cols_sorted = sorted(lr_cols, key=lambda x: str(x))
         lr_col = lr_cols_sorted[0]
-        # collapse to last row per epoch (handles per-step logging)
         per_epoch = _group_last_per_epoch(df[["epoch", lr_col]].copy())
-        # guard: drop rows with all-NaN LR
         if per_epoch[lr_col].notna().any():
             return per_epoch, lr_col
 
     return None, None
 
+# Learning rate
 def plot_lr_combo(base_dir: Path, out_dir: Path, runs: list[tuple[str, int]], logy: bool = True) -> bool:
     sns.set_theme(style="whitegrid")
     plt.figure(figsize=(8, 5))
@@ -164,9 +157,6 @@ def plot_lr_combo(base_dir: Path, out_dir: Path, runs: list[tuple[str, int]], lo
     for split, fold in runs:
         run_dir = base_dir / split / f"fold_{fold}"
         df, lr_col = find_lr_source_df(run_dir)
-        if df is None:
-            print(f"[skip] no LR data found under {run_dir}")
-            continue
 
         label = f"{pretty_split(split)} (fold {fold})"
         plt.plot(df["epoch"], df[lr_col], linewidth=2.2, alpha=0.95, label=label, color=color_map.get(split))

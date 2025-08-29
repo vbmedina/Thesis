@@ -1,17 +1,9 @@
 '''
-This script creates summary bar charts for early-recognition (Top-K) and core metrics by the 
-top ranking models split.
-
 Requirements
 - Aggregated Top-K metrics CSV: p2_models/analysis_outputs/topk_metrics_by_split_fold_rows.csv
   * Required columns: "split", "dataset", "hit_at_k", "ef_at_k"
 - Aggregated core metrics CSV: p2_models/analysis_outputs/all_metrics_by_split_fold_core.csv
   * Required columns: "split", "dataset", "rmse", "spearman_rho"
-
-Splits & Datasets
-- Fixed left-to-right split order: ["random", "scaffold", "butina", "umap_kmeans", "umap_ward"]
-  (only splits present in the CSVs are plotted)
-- Datasets: "fold_test" (Asexual) vs "sexual_data" (Sexual)
 
 What it plots
 1) HitRate@100 (mean ± SD across folds) — Asexual vs Sexual
@@ -20,13 +12,6 @@ What it plots
 4) Spearman (rho) (mean ± SD) — Asexual vs Sexual, with a zero reference line
 5) ΔHit@100 (Sexual - Asexual) — one bar per split
 
-Procedure
-1) Load both CSVs and validate required columns.
-2) Group by ["split","dataset"] and compute mean and standard deviation.
-3) Reorder splits according to SPLIT_ORDER and drop any missing ones.
-4) Render grouped bar charts with error bars (±SD) and a separate delta chart.
-5) Save figures as PNGs to the output directory.
-
 Outputs
 - p2_models/analysis_outputs/figures/
   * panel_hit_at_100.png
@@ -34,11 +19,6 @@ Outputs
   * panel_rmse.png
   * panel_spearman.png
   * panel_delta_hit_at_100.png
-
-Notes
-- Colors/labels and styling are defined at the top of the script (Asexual = fold_test, Sexual = external).
-- The script will raise if the required CSVs are missing or lack required columns.
-- Adjust SPLIT_ORDER/SPLIT_LABELS to change ordering or display names.
 '''
 
 from pathlib import Path
@@ -46,13 +26,13 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-# -------------------- Paths --------------------
+# Paths
 TOPK_CSV = "p2_models/analysis_outputs/topk_metrics_by_split_fold_rows.csv"
 CORE_CSV = "p2_models/analysis_outputs/all_metrics_by_split_fold_core.csv"
 OUT_DIR  = Path("p2_models/analysis_outputs/figures")
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
-# -------------------- Visuals --------------------
+# Visuals
 COLOR_ASEX = "#b82720"  # asexual (fold_test)
 COLOR_SEX  = "#dc6d6d"  # sexual (external)
 COLOR_GAP  = "#8d1115"  # delta bars
@@ -78,7 +58,7 @@ SPLIT_LABELS = {
     "umap_ward": "umap ward",
 }
 
-# -------------------- Helpers --------------------
+# Helpers
 def require_columns(df, cols, name):
     missing = [c for c in cols if c not in df.columns]
     if missing:
@@ -116,11 +96,10 @@ def grouped_bar_figure(metric_df, value_col, sd_col, ylabel, title, splits, out_
     if ylim is not None:
         ax.set_ylim(ylim)
 
-    # <<< add a black horizontal line at y=0 when requested >>>
     if zero_line:
         ax.axhline(0.0, color="black", lw=1.2, zorder=3)
 
-    # Legend on the RIGHT (outside the axes)
+    # Legend on the RIGHT 
     handles, labels = ax.get_legend_handles_labels()
     ax.legend(handles, labels, loc="center left", bbox_to_anchor=(1.02, 0.5),
               frameon=False, ncol=1)
@@ -153,7 +132,6 @@ def delta_bar_figure(delta_vals, splits, ylabel, title, out_path):
     plt.close(fig)
     print("Saved", out_path)
 
-# -------------------- Load --------------------
 if not Path(TOPK_CSV).exists():
     raise FileNotFoundError(f"Cannot find {TOPK_CSV}")
 if not Path(CORE_CSV).exists():
@@ -165,7 +143,7 @@ core = pd.read_csv(CORE_CSV)
 require_columns(topk, ["split","dataset","hit_at_k","ef_at_k"], "topk CSV")
 require_columns(core, ["split","dataset","rmse","spearman_rho"], "core CSV")
 
-# -------------------- Aggregate --------------------
+# Aggregate
 agg_topk = (
     topk.groupby(["split","dataset"], as_index=False)
         .agg(hit_mean=("hit_at_k","mean"), hit_sd=("hit_at_k","std"),
@@ -188,11 +166,7 @@ df_ef  = agg_topk.rename(columns={"ef_mean":"val","ef_sd":"sd"})
 df_rmse= agg_core.rename(columns={"rmse_mean":"val","rmse_sd":"sd"})
 df_rho = agg_core.rename(columns={"rho_mean":"val","rho_sd":"sd"})
 
-# Delta (Sexual − Asexual) for Hit@100
-hit_wide = agg_topk.pivot(index="split", columns="dataset", values="hit_mean").reindex(splits)
-delta_hit = (hit_wide["sexual_data"] - hit_wide["fold_test"]).to_numpy()
-
-# -------------------- Make separate PNGs --------------------
+# Make graphs
 # 1) HitRate@100
 grouped_bar_figure(
     metric_df=df_hit, value_col="val", sd_col="sd",
@@ -228,14 +202,6 @@ grouped_bar_figure(
     out_path=OUT_DIR / "panel_spearman.png",
     ylim=(-1, 1),
     zero_line=True
-)
-
-# 5) ΔHit@100 (Sexual − Asexual) — with right-side legend
-delta_bar_figure(
-    delta_vals=delta_hit, splits=splits,
-    ylabel="Change in Hit Rate at 100 (Sexual - Asexual)",
-    title="Generalization Gap — Difference in Hit Rate at 100",
-    out_path=OUT_DIR / "panel_delta_hit_at_100.png"
 )
 
 print("All done.")

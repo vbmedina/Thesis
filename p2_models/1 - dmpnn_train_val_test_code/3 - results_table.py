@@ -1,6 +1,4 @@
 '''
-Compute early-recognition Top-K metrics (hit rate, enrichment factor, MCC) from per-fold prediction CSVs.
-
 Requirements
 - Per-fold prediction files produced by the evaluation step:
   ./p2_models/models/<split>/fold_<k>/
@@ -13,46 +11,11 @@ Splits & Folds
 - Folds are discovered as fold_* unless restricted via --folds.
 - Datasets evaluated per fold: ["fold_test", "sexual_data"] (skips missing files).
 
-Metrics (computed on valid rows, keeping any replicates)
-- Absolute Top-K (@K):
-  * hit_at_k        = TP@K / K
-  * ef_at_k         = hit_at_k / prevalence
-  * mcc_at_k        = MCC when classifying only the Top-K as positive
-- Fractional Top-K% (@K%):
-  * hit_at_kpct, ef_at_kpct, mcc_at_kpct (same definitions using K% of rows)
-- Additional fields:
-  * prevalence, k_used, k_pct_used, n_rows
-  * n_actives_total, n_inactives_total
-  * tp_at_k, expected_tp_at_k (= prevalence * K)
-  * tp_at_kpct, expected_tp_at_kpct
-- Positives are defined by a pIC50 threshold (default 6.0): y_true ≥ threshold.
-
-Procedure
-1) Traverse ./p2_models/models/<split>/fold_<k>/ (optionally filtered by --splits/--folds).
-2) For each dataset tag in {"fold_test","sexual_data"}:
-   a. Load pred_vs_true_{tag}.csv.
-   b. Sort rows by y_pred descending.
-   c. Compute Top-K and Top-K% metrics.
-3) Concatenate per-fold rows and write a single CSV.
-
-Command-line Arguments
-- --base-root     (default: ./p2_models)
-- --out-dir-name  (default: analysis_outputs)
-- --threshold     (float, default: 6.0)
-- --k             (int absolute K, default: 100)
-- --k-frac        (fractional K%, default: 0.05 for 5%; uses ceil, min 1 row)
-- --splits        (comma-separated list to restrict splits, e.g., "random,scaffold")
-- --folds         (comma-separated ints to restrict folds, e.g., "1,2,3")
-
 Outputs
 - ./p2_models/analysis_outputs/topk_metrics_by_split_fold_rows.csv
   Columns include: split, fold, dataset, hit_at_k/ef_at_k/mcc_at_k,
   hit_at_kpct/ef_at_kpct/mcc_at_kpct, prevalence, k_used, k_pct_used, n_rows, and counts.
 
-Notes
-- K is clamped to [1, N]; K% uses ceil(max(1, k_frac * N)).
-- Files missing for a given (split, fold, tag) are skipped gracefully.
-- Exits with a message if no prediction CSVs are found.
 '''
 from __future__ import annotations
 import argparse, math

@@ -1,6 +1,6 @@
 '''
-Description: Evaluates Chemprop D-MPNN best checkpoints on fold test sets and an 
-the external sexual test set, and export predictions + core metrics.
+Description: Evaluates Chemprop D-MPNN best checkpoints on fold test sets and an the external sexual test set, and export 
+predictions + core metrics.
 
 Requirements
 - Model checkpoints per split/fold at: ./p2_models/models/<split>/fold_<k>/
@@ -9,26 +9,6 @@ Requirements
   - Filenames accepted: {split}_fold_{k}_test.csv or {split}_fold{k}_test.csv
 - External evaluation CSV: ./p2_models/input_data/sexual_test.csv
 - Required columns: "Smiles", "pIC50"
-
-Splits & Folds
-- Splits: ["random", "scaffold", "butina", "umap_kmeans", "umap_ward"]
-- Folds: The script evaluates whatever fold directories exist with a valid checkpoint.
-    (After step 1 (train and validate), user selects the top-k models per split by 
-    lowest RMSE with Spearman (rho) as the tiebreak.)
-
-Procedure
-1) Discover split/fold directories that contain any accepted checkpoint.
-2) For each (split, fold):
-   a. Load the fold test CSV and the external CSV.
-   b. Parse SMILES to RDKit Mol objects; drop invalid entries (logged).
-   c. Build Chemprop MoleculeDataset objects and DataLoaders.
-   d. Load the MPNN checkpoint (CPU), set eval mode, and run Lightning `Trainer.predict`.
-   e. Compute metrics on valid rows:
-      - RMSE
-      - Spearman (rho)
-      - PR-AUC (treat y ≥ 6.0 pIC50 as positive)
-      - MCC at 6.0 pIC50
-   f. Save per-fold prediction CSVs and (if any) invalid-SMILES CSVs.
 
 Outputs
 - Per split/fold directory: ./p2_models/models/<split>/fold_<k>/
@@ -39,7 +19,6 @@ Outputs
 
 Notes
 - Evaluation is CPU-only and uses a fixed seed for determinism of non-GPU components.
-- Checkpoint selection preference: best-v1 → best → last-v1 → last (printed per fold).
 '''
 from __future__ import annotations
 from dataclasses import dataclass
