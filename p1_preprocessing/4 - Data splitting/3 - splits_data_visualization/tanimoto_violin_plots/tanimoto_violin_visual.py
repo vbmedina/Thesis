@@ -5,7 +5,6 @@ Preconditions:
 1) "split_data" directory with subdirectories for each splitting method containing CSV files for folds 1-5 from step 2 
 "Data splitting"
 '''
-
 # Conda activate molml 
 # Imports
 from pathlib import Path
@@ -26,6 +25,16 @@ DATA_ROOT = PROJECT
 
 BASE_DIRS = [DATA_ROOT / "2 - split_data"]
 SPLITS    = ["random", "scaffold", "butina", "umap_kmeans", "umap_ward"]
+
+# Display names for nicer axis labels
+DISPLAY_NAME = {
+    "random": "Random (stratified)",
+    "scaffold": "Scaffold",
+    "butina": "Butina",
+    "umap_kmeans": "UMAP (k-means)",
+    "umap_ward": "UMAP (ward)",
+}
+
 FOLDS     = [1, 2, 3, 4, 5]
 SMI_COL   = "Smiles"
 
@@ -177,6 +186,9 @@ def main():
         medianprops=dict(color="black", linewidth=1.5),
         ax=ax
     )
+
+    # Use nicer method names on the x-axis
+    ax.set_xticklabels([DISPLAY_NAME.get(m, m) for m in order], rotation=0)
 
     # Labels
     ax.set_xlabel("Splitting Method")
