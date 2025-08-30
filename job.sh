@@ -8,6 +8,6 @@
 source ${HOME}/.bashrc
 conda activate /rds/general/user/vbm24/home/Thesis/.conda/dmpnn
  
-cd /rds/general/user/vbm24/home/Thesis/p2_models/src
+cd "/rds/general/user/vbm24/home/Thesis/p2_models/1 - dmpnn_train_val_test_code"
 
-python run_dmpnn.py
+python "./1 - train_validate_dmpnn.py"

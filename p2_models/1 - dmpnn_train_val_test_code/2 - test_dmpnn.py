@@ -1,6 +1,14 @@
 '''
-Description: Evaluates Chemprop D-MPNN best checkpoints on fold test sets and an the external sexual test set, and export 
-predictions + core metrics.
+Description: Evaluates Chemprop D-MPNN best checkpoints on fold test sets and the
+external sexual test set, and exports predictions + core metrics.
+
+Core test metrics (imbalanced-aware)
+- RMSE
+- Spearman rho
+- PR-AUC (Average Precision; threshold-free)
+- HR@100 (top-100 hit rate at pIC50 ≥ threshold)
+- EF@100 (enrichment factor at top-100 relative to test-set prevalence)
+- Prevalence (fraction actives in each evaluated set)
 
 Requirements
 - Model checkpoints per split/fold at: ./p2_models/models/<split>/fold_<k>/
@@ -10,15 +18,28 @@ Requirements
 - External evaluation CSV: ./p2_models/input_data/sexual_test.csv
 - Required columns: "Smiles", "pIC50"
 
+Procedure
+1) Discover split/fold directories that contain any accepted checkpoint.
+2) For each (split, fold):
+   a. Load the fold test CSV and the external CSV.
+   b. Parse SMILES to RDKit Mol objects; drop invalid entries (logged).
+   c. Build Chemprop MoleculeDataset objects and DataLoaders.
+   d. Load the MPNN checkpoint (CPU), set eval mode, and run Lightning `Trainer.predict`.
+   e. Compute metrics on valid rows:
+      - RMSE, Spearman rho, PR-AUC, HR@100, EF@100, Prevalence
+   f. Save per-fold prediction CSVs and (if any) invalid-SMILES CSVs.
+
 Outputs
 - Per split/fold directory: ./p2_models/models/<split>/fold_<k>/
   * pred_vs_true_fold_test.csv
   * pred_vs_true_sexual_data.csv
-- Aggregated table (per-fold rows) in: ./p2_models/analysis_outputs/
-  * all_metrics_by_split_fold_core.csv  (columns: split, fold, dataset, rmse, spearman_rho, pr_auc, mcc_at_6)
+- Aggregated table (per-fold rows) in: ./p2_models/3 - analysis_outputs/
+  * all_metrics_by_split_fold_core.csv
+    (columns: split, fold, dataset, rmse, spearman_rho, pr_auc, hr_at_100, ef_at_100, prevalence)
 
 Notes
 - Evaluation is CPU-only and uses a fixed seed for determinism of non-GPU components.
+- Checkpoint selection preference: best-v1 → best → last-v1 → last (printed per fold).
 '''
 from __future__ import annotations
 from dataclasses import dataclass
@@ -34,16 +55,22 @@ from sklearn import metrics
 from scipy.stats import spearmanr
 from rdkit import Chem 
 
-# CPU-only settings & paths
+# -------------------- CPU-only settings & paths --------------------
 DEVICE = torch.device("cpu") 
 BASE_ROOT = Path("./p2_models").expanduser()
-EXTERNAL_CSV = BASE_ROOT / "input_data" / "sexual_test.csv"
-OUT_DIR_NAME = "analysis_outputs"
+EXTERNAL_CSV = BASE_ROOT / "0 - input_data" / "sexual_test.csv"
+OUT_DIR_NAME = "./p2_models/3 - analysis_test_results"
 SMILES_COL = "Smiles"
 TARGET_COL = "pIC50"
-THRESHOLD = 6.0
+
+THRESHOLD = 6.0           # binarization threshold for actives
+K_HIT_RATE = 100          # specify K for HR@K / EF@K
+
 NUM_WORKERS = 0
 SEED = 2858808528
+
+HR_AT_K_COL = f"hr_at_{K_HIT_RATE}"
+EF_AT_K_COL = f"ef_at_{K_HIT_RATE}"
 
 TARGET_MODELS = {
     "random":      1,
@@ -53,7 +80,7 @@ TARGET_MODELS = {
     "umap_ward":   5,
 }
 
-# Config
+# -------------------- Config --------------------
 @dataclass
 class Config:
     base_root: Path = BASE_ROOT
@@ -63,10 +90,9 @@ class Config:
     target_col: str = TARGET_COL
     threshold: float = THRESHOLD
 
-# Helpers for finding paths to checkpoints (best-v1/best/last-v1/last)
+# -------------------- Helpers: checkpoints & data --------------------
 def discover_splits_and_folds(base_root: Path) -> Dict[str, List[int]]:
-    """Find all <split>/fold_<n>/ that contain any checkpoint under <base_root>/models."""
-    models_root = base_root / "models"
+    models_root = base_root / "2 - train_val_test_results"
     if not models_root.exists():
         raise FileNotFoundError(f"Missing models dir: {models_root}")
 
@@ -90,18 +116,15 @@ def discover_splits_and_folds(base_root: Path) -> Dict[str, List[int]]:
         raise FileNotFoundError(f"No split/fold checkpoints found under {models_root}")
     return splits
 
-# Helpers for finding paths to test
 def find_test_csv(base_root: Path, split: str, fold: int) -> Path:
-    split_dir = base_root / "input_data" / "split_data" / split
+    split_dir = base_root / "0 - input_data" / "split_data" / split
     for name in (f"{split}_fold_{fold}_test.csv", f"{split}_fold{fold}_test.csv"):
         p = split_dir / name
         if p.exists():
             return p
     raise FileNotFoundError(f"Missing test CSV for split={split} fold={fold} in {split_dir}")
 
-# Helper find checkpoint
 def pick_checkpoint(fold_dir: Path) -> Path:
-    """Prefer best-v1 → best → last-v1 → last."""
     for name in ("best-v1.ckpt", "best.ckpt", "last-v1.ckpt", "last.ckpt"):
         p = fold_dir / name
         if p.exists():
@@ -109,9 +132,8 @@ def pick_checkpoint(fold_dir: Path) -> Path:
     raise FileNotFoundError(
         f"No checkpoint found in {fold_dir} (checked best-v1.ckpt, best.ckpt, last-v1.ckpt, last.ckpt).")
 
-# Data and Test Model
+# -------------------- Build datasets --------------------
 def smiles_to_mols_and_mask(df: pd.DataFrame, smiles_col: str) -> Tuple[List, np.ndarray]:
-    # Convert SMILES into RDKit Mol
     smi = df[smiles_col].astype(str).tolist()
     mols: List = []
     mask = np.zeros(len(smi), dtype=bool)
@@ -128,13 +150,10 @@ def smiles_to_mols_and_mask(df: pd.DataFrame, smiles_col: str) -> Tuple[List, np
     return mols, mask
 
 def build_dataset_from_mols(df: pd.DataFrame, smiles_col: str, target_col: str):
-    # Build a Chemprop MoleculeDataset from RDKit Mol
     from chemprop.data import MoleculeDataset, MoleculeDatapoint
-
     mols, mask = smiles_to_mols_and_mask(df, smiles_col)
     y_all = df[target_col].to_numpy()
     y = y_all[mask]
-
     dpoints = []
     for mol, yv in zip(mols, y):
         tgt = [float(yv)] if pd.notna(yv) else [None]
@@ -144,14 +163,12 @@ def build_dataset_from_mols(df: pd.DataFrame, smiles_col: str, target_col: str):
 def make_dataloader(dset, shuffle=False, num_workers=NUM_WORKERS):
     if hasattr(data, "build_dataloader"):
         return data.build_dataloader(dset, shuffle=shuffle, num_workers=num_workers)
-    raise RuntimeError("chemprop.data.build_dataloader is not available, and this build lacks MoleculeDataLoader." 
-                       "Install a Chemprop version that provides one.")
+    raise RuntimeError("chemprop.data.build_dataloader is not available. Install a Chemprop build that provides one.")
 
-# Run Lightning predict
+# -------------------- Predict --------------------
 def predict(trainer: pl.Trainer, model: models.MPNN, loader) -> np.ndarray:
     def _to_flat_cpu_numpy(x):
         if isinstance(x, dict):
-            # try common keys first, else take the first value
             for k in ("y_hat", "preds", "y_pred", "pred", "logits", "output", "out"):
                 if k in x:
                     x = x[k]
@@ -169,11 +186,11 @@ def predict(trainer: pl.Trainer, model: models.MPNN, loader) -> np.ndarray:
     flats = [_to_flat_cpu_numpy(b) for b in outs]
     return np.concatenate(flats, axis=0)
 
-# Metrics 
-
-def compute_core_metrics(y_true: np.ndarray, y_pred: np.ndarray, thr: float):
+# -------------------- Metrics --------------------
+def compute_core_metrics(y_true: np.ndarray, y_pred: np.ndarray, thr: float, k: int):
     y_true = np.asarray(y_true, dtype=float).ravel()
     y_pred = np.asarray(y_pred, dtype=float).ravel()
+    n = len(y_true)
 
     # RMSE
     mse  = float(metrics.mean_squared_error(y_true, y_pred))
@@ -183,24 +200,36 @@ def compute_core_metrics(y_true: np.ndarray, y_pred: np.ndarray, thr: float):
     rho, _ = spearmanr(y_true, y_pred)
     spearman_rho = float(rho)
 
-    # PR-AUC 
+    # Binary labels at threshold
     yb = (y_true >= thr).astype(int)
-    pr_auc = float(metrics.average_precision_score(yb, y_pred))
+    pos = int(yb.sum())
+    prevalence = float(pos / n) if n > 0 else float("nan")
 
-    # MCC @ 6 pIC50 threshold
-    yp = (y_pred >= thr).astype(int)
-    tp = int(((yb == 1) & (yp == 1)).sum())
-    tn = int(((yb == 0) & (yp == 0)).sum())
-    fp = int(((yb == 0) & (yp == 1)).sum())
-    fn = int(((yb == 1) & (yp == 0)).sum())
-    num = tp * tn - fp * fn
-    den = np.sqrt((tp + fp) * (tp + fn) * (tn + fp) * (tn + fn))
-    mcc_at_6 = float(num / den) if den > 0 else 0.0
+    # PR-AUC (Average Precision); handle degenerate single-class cases
+    if pos == 0 or pos == n:
+        pr_auc = float("nan")
+    else:
+        pr_auc = float(metrics.average_precision_score(yb, y_pred))
 
-    return {"rmse": rmse, "spearman_rho": spearman_rho, "pr_auc": pr_auc, "mcc_at_6": mcc_at_6}
+    # HR@K (top-K by predicted score)
+    order = np.argsort(-y_pred)  # descending
+    k_eff = int(min(k, n))
+    hits_at_k = int(yb[order[:k_eff]].sum()) if k_eff > 0 else 0
+    hr_at_k = float(hits_at_k / k_eff) if k_eff > 0 else float("nan")
 
-# Main loop
+    # EF@K = (HR@K / prevalence)
+    ef_at_k = float(hr_at_k / prevalence) if prevalence > 0 else float("nan")
 
+    return {
+        "rmse": rmse,
+        "spearman_rho": spearman_rho,
+        "pr_auc": float(pr_auc),
+        HR_AT_K_COL: hr_at_k,
+        EF_AT_K_COL: ef_at_k,
+        "prevalence": prevalence,
+    }
+
+# -------------------- Main --------------------
 def main():
     cfg = Config()
 
@@ -213,7 +242,6 @@ def main():
 
     pl.seed_everything(SEED, workers=True)
 
-    # Force CPU Testing
     trainer = pl.Trainer(
         accelerator="cpu",
         devices=1,
@@ -226,7 +254,7 @@ def main():
 
     for split, folds in split_folds.items():
         print(f"\n=== SPLIT: {split} ===")
-        models_dir = cfg.base_root / "models" / split
+        models_dir = cfg.base_root / "2 - train_val_test_results" / split
         for fold in folds:
             fold_dir = models_dir / f"fold_{fold}"
             ckpt = pick_checkpoint(fold_dir)
@@ -237,7 +265,7 @@ def main():
             df_test = pd.read_csv(test_csv)
             df_ext  = pd.read_csv(cfg.external_csv)
 
-            # Build datasets from RDKit Mols
+            # Build datasets
             dtest, mask_t = build_dataset_from_mols(df_test, cfg.smiles_col, cfg.target_col)
             dext,  mask_e = build_dataset_from_mols(df_ext,  cfg.smiles_col, cfg.target_col)
 
@@ -249,18 +277,17 @@ def main():
             model.to(DEVICE)
             model.eval()
 
-            # Filter truths to valid rows before computing metrics
+            # Filter truths to valid rows
             y_true_t = df_test[cfg.target_col].to_numpy()[mask_t]
             y_true_e = df_ext[cfg.target_col].to_numpy()[mask_e]
 
             y_pred_t = predict(trainer, model, test_loader)
             y_pred_e = predict(trainer, model, ext_loader)
 
-            # Sanity check
             assert len(y_true_t) == len(y_pred_t), "Mismatch test y_true vs y_pred after SMILES filtering."
             assert len(y_true_e) == len(y_pred_e), "Mismatch external y_true vs y_pred after SMILES filtering."
 
-            # save per-fold predictions next to checkpoint (only valid rows)
+            # save per-fold predictions (only valid rows)
             df_test_valid = df_test.loc[mask_t, [cfg.smiles_col]].copy()
             df_test_valid["y_true"] = y_true_t
             df_test_valid["y_pred"] = y_pred_t
@@ -282,38 +309,35 @@ def main():
             # Metrics for both datasets
             for tag, yt, yp in (("fold_test", y_true_t, y_pred_t), ("sexual_data", y_true_e, y_pred_e)):
                 row = {"split": split, "fold": fold, "dataset": tag}
-                row.update(compute_core_metrics(yt, yp, cfg.threshold))
+                row.update(compute_core_metrics(yt, yp, cfg.threshold, K_HIT_RATE))
                 per_fold_rows.append(row)
 
     if not per_fold_rows:
         raise SystemExit("No (split, fold) pairs produced results. Check your folders and filenames.")
 
-    # Aggregate and save tables 
+    # Save per-fold metrics table
     per_fold_df = pd.DataFrame(per_fold_rows).sort_values(["split", "fold", "dataset"])
-    (out_root / "all_metrics_by_split_fold_core.csv").write_text(per_fold_df.to_csv(index=False))
-    print(f"\nSaved to {out_root / 'all_metrics_by_split_fold_core.csv'}")
+    (out_root / "final_test_metrics.csv").write_text(per_fold_df.to_csv(index=False))
+    print(f"\nSaved to {out_root / 'final_test_metrics.csv'}")
 
+    # Optional: simple aggregation (means/sds per split & dataset) — kept minimal
     agg = (
         per_fold_df
         .groupby(["split", "dataset"])
-        .agg(rmse_mean=("rmse", "mean"), rmse_sd=("rmse", "std"), spearman_rho_mean=("spearman_rho", "mean"), 
-            spearman_rho_sd=("spearman_rho", "std"), pr_auc_mean=("pr_auc", "mean"), pr_auc_sd=("pr_auc", "std"),
-            mcc_at_6_mean=("mcc_at_6", "mean"),      mcc_at_6_sd=("mcc_at_6", "std"))
-        .reset_index())
-
-    wide = agg.pivot(index="split", columns="dataset")
-    delta_rmse_mean = wide["rmse_mean"]["sexual_data"] - wide["rmse_mean"]["fold_test"]
-
-    def name(metric_stat: str, dataset: str) -> str:
-        return f"{dataset}_{metric_stat}"
-
-    main_df = pd.DataFrame({"split": wide.index})
-    for metric_stat in ["rmse_mean", "rmse_sd",
-                        "spearman_rho_mean", "spearman_rho_sd",
-                        "pr_auc_mean", "pr_auc_sd",
-                        "mcc_at_6_mean", "mcc_at_6_sd"]:
-        for dataset in ["fold_test", "sexual_data"]:
-            main_df[name(metric_stat, dataset)] = wide[metric_stat][dataset].values
+        .agg(
+            rmse_mean=("rmse", "mean"), rmse_sd=("rmse", "std"),
+            spearman_rho_mean=("spearman_rho", "mean"), spearman_rho_sd=("spearman_rho", "std"),
+            pr_auc_mean=("pr_auc", "mean"), pr_auc_sd=("pr_auc", "std"),
+            **{f"{HR_AT_K_COL}_mean": (HR_AT_K_COL, "mean"),
+               f"{HR_AT_K_COL}_sd":   (HR_AT_K_COL, "std"),
+               f"{EF_AT_K_COL}_mean": (EF_AT_K_COL, "mean"),
+               f"{EF_AT_K_COL}_sd":   (EF_AT_K_COL, "std"),
+               "prevalence_mean": ("prevalence", "mean"),
+               "prevalence_sd":   ("prevalence", "std")}
+        )
+        .reset_index()
+    )
+    # (Not written to disk to keep outputs unchanged; add save if you need it.)
 
 if __name__ == "__main__":
     main()
