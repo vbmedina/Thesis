@@ -3,7 +3,7 @@ Train & validate a Chemprop D-MPNN for pIC50 across multiple data-split strategi
 saving both best and last checkpoints.
 
 Requirements
-- Pre-split CSVs from the data-splitting step: ./p2_models/input_data/split_data/{split}/
+- Pre-split CSVs from the data-splitting step: ./p2_models/0 - input_data/split_data/{split}/
 - Required columns: "Smiles", "pIC50"
 
 Splits & Folds
@@ -43,9 +43,9 @@ import shutil
 
 # Config
 ALL_SPLITS = ["random", "scaffold", "butina", "umap_kmeans", "umap_ward"]
-p2models_dir = Path.home() / "Thesis" / "p2_models"
-BASE_SPLITS_DIR = p2models_dir / "input_data" / "split_data"
-BASE_OUT_DIR = p2models_dir / "models"
+p2models_dir = Path.home() / "Thesis" / "p2_models" 
+BASE_SPLITS_DIR = p2models_dir / "0 - input_data" / "split_data" 
+BASE_OUT_DIR = p2models_dir / "2 - train_val_test_results"
 
 # Inputs
 SMILES_COL = "Smiles"

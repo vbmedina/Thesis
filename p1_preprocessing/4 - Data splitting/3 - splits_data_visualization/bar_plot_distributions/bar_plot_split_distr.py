@@ -32,14 +32,13 @@ MAIN_LINE_RE = re.compile(
     r"\s*actives≥(?P<thr>[\d\.]+)\s*val:\s*(?P<val_act>[\d,]+)\s*test:\s*(?P<test_act>[\d,]+)"
 )
 
-# Display names and fixed order
 DISPLAY_NAME = {
-    "random": "random",
-    "scaffold": "scaffold",
-    "butina": "butina",
-    "umap_kmeans": "umap (kfold)",
-    "umap_ward": "umap (ward)",
-}
+    "random": "Random (stratified)",
+    "scaffold": "Scaffold",
+    "butina": "Butina",
+    "umap_kmeans": "UMAP (k-means)",
+    "umap_ward": "UMAP (ward)"}
+
 DESIRED_ORDER = ["random", "scaffold", "butina", "umap_kmeans", "umap_ward"]
 
 def parse_log(log_path: Path) -> pd.DataFrame:

@@ -22,6 +22,14 @@ SMI_COL = "Smiles"
 N_BITS, RADIUS = 2048, 2
 OUT = Path("./p1_preprocessing/4 - Data splitting/3 - splits_data_visualization/global_clustering_per_split/split_folds_embedding.png")
 
+DISPLAY_NAME = {
+    "random": "Random (stratified)",
+    "scaffold": "Scaffold",
+    "butina": "Butina",
+    "umap_kmeans": "UMAP (k-means)",
+    "umap_ward": "UMAP (ward)",
+}
+
 # Helper for finding csv;s
 def find_file(dirp, method, fold, split):
     for pat in (f"{method}_fold_{fold}_{split}.csv", f"{method}_fold{fold}_{split}.csv"):
@@ -97,7 +105,7 @@ palette = sns.color_palette("Reds", len(FOLDS)+2)[2:]
 
 for ax, m in zip(axes, present):
     lab = labels[m]
-    ax.set_title(f"{m} split")
+    ax.set_title(DISPLAY_NAME.get(m, m))
     for f in FOLDS:
         mask = lab == f
         if not np.any(mask): continue

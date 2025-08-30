@@ -30,7 +30,7 @@ from math import sqrt
 
 # --------- CONFIG ---------
 BASE_MODELS = Path("p2_models/2 - train_val_test_results")
-OUT_DIR = Path("p2_models/3 - analysis_test_results/scatterplot_from_best_splits_results")
+OUT_DIR     = Path("p2_models/3 - analysis_test_results/figures/scatterplot_from_best_splits_results")
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
 SELECTED = [

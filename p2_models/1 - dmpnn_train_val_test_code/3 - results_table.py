@@ -6,11 +6,6 @@ Requirements
     * pred_vs_true_sexual_data.csv
 - Required columns in each file: "y_true", "y_pred"
 
-Splits & Folds
-- Splits are discovered under ./p2_models/models/ unless restricted via --splits.
-- Folds are discovered as fold_* unless restricted via --folds.
-- Datasets evaluated per fold: ["fold_test", "sexual_data"] (skips missing files).
-
 Outputs
 - ./p2_models/analysis_outputs/topk_metrics_by_split_fold_rows.csv
   Columns include: split, fold, dataset, hit_at_k/ef_at_k/mcc_at_k,
@@ -164,7 +159,7 @@ def main():
         raise SystemExit("No prediction CSVs found. Expected pred_vs_true_{fold_test,sexual_data}.csv under models/<split>/fold_*/")
 
     per_df = pd.DataFrame(rows).sort_values(["split","fold","dataset"])
-    per_path = out_root / "topk_metrics_by_split_fold_rows.csv"
+    per_path = out_root / "overall_test_metrics_with_hit_rate.csv"
     per_df.to_csv(per_path, index=False)
     print("Wrote:", per_path)
 
