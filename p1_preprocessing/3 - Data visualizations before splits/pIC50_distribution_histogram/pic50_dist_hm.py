@@ -37,9 +37,14 @@ counts, bin_edges = np.histogram(df["pIC50"].dropna(), bins=bins)
 bin_centers = 0.5 * (bin_edges[:-1] + bin_edges[1:])
 
 # Colour Mapping
-norm = colors.Normalize(vmin=counts.min(), vmax=counts.max())
-cmap = cm.get_cmap("Reds")
-bar_colors = cmap(norm(counts))
+c_inactive = 'tab:blue'
+c_active   = 'tab:orange'
+c_high     = 'tab:green'
+
+bar_colors = np.where(
+    bin_centers < main_threshold, c_inactive,
+    np.where(bin_centers < upper_threshold, c_active, c_high)
+)
 
 # Plot
 fig, ax = plt.subplots(figsize=figsize)
@@ -51,11 +56,11 @@ lt_active = ax.axvline(main_threshold,  ls="-", lw=2.0, color="black")
 lt_high   = ax.axvline(upper_threshold, ls="-.", lw=2.0, color="black")
 
 # Legend Patches
-patch_inactive = patches.Patch(color=cmap(norm(counts.max() * 0.9)),
+patch_inactive = patches.Patch(color=c_inactive,
                                label=f"Inactive (<{main_threshold}): {inactive_count:,}")
-patch_active   = patches.Patch(color=cmap(norm(counts.max() * 0.6)),
+patch_active   = patches.Patch(color=c_active,
                                label=f"Active (≥{main_threshold} & <{upper_threshold}): {active_count:,}")
-patch_high     = patches.Patch(color=cmap(norm(counts.max() * 0.3)),
+patch_high     = patches.Patch(color=c_high,
                                label=f"High-potency (≥{upper_threshold}): {high_count:,}")
 
 # legend Lines

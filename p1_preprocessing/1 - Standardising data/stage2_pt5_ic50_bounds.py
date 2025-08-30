@@ -15,7 +15,7 @@ out_path  = "./p0_all_csvs/postphase2_5.csv"
 df = pd.read_csv(in_path)
 before = len(df)                              
 
-# Define chemically plausible window for pIC50
+
 lower_bound = 4.0
 upper_bound = 11.0
 

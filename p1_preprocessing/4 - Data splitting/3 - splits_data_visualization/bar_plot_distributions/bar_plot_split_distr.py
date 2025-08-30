@@ -37,7 +37,7 @@ DISPLAY_NAME = {
     "random": "random",
     "scaffold": "scaffold",
     "butina": "butina",
-    "umap_kmeans": "umap (kfold)",
+    "umap_kmeans": "umap (k-means)",
     "umap_ward": "umap (ward)",
 }
 DESIRED_ORDER = ["random", "scaffold", "butina", "umap_kmeans", "umap_ward"]
