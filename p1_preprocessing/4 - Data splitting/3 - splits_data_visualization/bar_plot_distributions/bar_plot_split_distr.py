@@ -131,7 +131,7 @@ def make_plot(df: pd.DataFrame, out_path: Path):
     # Bottom x ticks
     ax.set_xticks(x_positions)
     ax.set_xticklabels(labels, rotation=0)
-    ax.set_xlabel("Fold (K)", fontsize=12)
+    ax.set_xlabel("Fold (K)", fontsize=14)
 
     # Top x labels
     ax_top = ax.secondary_xaxis('top')
@@ -140,10 +140,10 @@ def make_plot(df: pd.DataFrame, out_path: Path):
     for t in ax_top.get_xticklabels():
         t.set_fontweight("semibold")
 
-    ax.set_ylabel("Number of Molecules", fontsize=12)
+    ax.set_ylabel("Number of Molecules", fontsize=14)
 
     # Suptitle
-    fig.suptitle("Split Composition by Method and Fold", fontsize=15, y=0.98)
+    fig.suptitle("Split Composition by Method and Fold", fontsize=16, y=0.98)
     plt.subplots_adjust(top=0.90, bottom=0.22, left=0.08, right=0.85)
 
     # Handels for legend

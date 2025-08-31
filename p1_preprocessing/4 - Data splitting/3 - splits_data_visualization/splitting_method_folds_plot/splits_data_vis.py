@@ -49,8 +49,8 @@ sns.heatmap(
 ax.set_facecolor("#f8fafc")
 
 # Axes labels and ticks
-ax.set_xlabel("Blocks (each 20% of dataset)")
-ax.set_ylabel("Splits")
+ax.set_xlabel("Blocks (each 20% of dataset)", fontsize=12)
+ax.set_ylabel("Splits", fontsize=12)
 ax.set_xticks(np.arange(FOLDS) + 0.5)
 ax.set_xticklabels([str(i) for i in range(1,FOLDS + 1)], rotation = 0)
 ax.set_yticks(np.arange(FOLDS) + 0.5)
@@ -66,7 +66,7 @@ for i in range(FOLDS):
                 "TEST",
                 ha="center",
                 va="center",
-                fontsize=9,
+                fontsize=11,
                 color="white",
                 fontweight="bold")
 
