@@ -39,7 +39,7 @@ ax = sns.scatterplot(
 LABEL_PAD = 12
 ax.set_xlabel("RMSE", labelpad=LABEL_PAD)
 ax.set_ylabel("Spearman's rho", labelpad=LABEL_PAD)
-ax.set_title("Validation: Spearman’s rho vs RMSE")
+ax.set_title("Validation: RMSE against Spearman's rho vs ")
 MAJOR_X = 0.01
 MAJOR_Y = 0.005
 MINOR_Y = 0.0025
@@ -68,6 +68,10 @@ ax.yaxis.set_major_locator(mticker.MultipleLocator(MAJOR_Y))
 ax.yaxis.set_minor_locator(mticker.MultipleLocator(MINOR_Y))
 ax.yaxis.set_major_formatter(mticker.FormatStrFormatter('%.3f'))
 
+# Grid:
+ax.grid(True, which="major", linestyle="--", linewidth=0.6, alpha=0.6)
+ax.grid(True, which="minor", linestyle=":",  linewidth=0.5, alpha=0.35)
+
 # Annotate folds
 rightmost_idx = df.nlargest(2, "RMSE").index
 for idx, r in df.iterrows():
@@ -82,7 +86,7 @@ for idx, r in df.iterrows():
             f'fold {int(r["Fold"])}',
             (r["RMSE"], r["Spearman"]),
             xytext=(8, 6), textcoords="offset points",
-            ha="left", va="bottom", fontsize=9)
+            ha="left", va="bottom", fontsize=11)
 
 # Legend outside
 ax.legend(title="Split", bbox_to_anchor=(1.02, 1), loc="upper left", frameon=True)
