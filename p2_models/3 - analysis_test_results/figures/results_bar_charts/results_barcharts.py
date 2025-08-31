@@ -37,11 +37,11 @@ plt.rcParams.update({
     "ytick.labelsize": 10,
 })
 
-# Use seaborn Reds palette for consistent colors
-reds = sns.color_palette("Reds", 9)
-COLOR_ASEX = reds[7] 
-COLOR_SEX = reds[4] 
-COLOR_GAP = reds[8]
+# --- Colors ---
+# Requested brand colors
+COLOR_ASEX = "#eca38c"   # asexual
+COLOR_SEX  = "#b12d31"   # sexual
+COLOR_GAP  = "#6e1a1d"   # gap/delta
 
 # Split order & display labels (as requested)
 SPLIT_ORDER = ["random", "scaffold", "butina", "umap_kmeans", "umap_ward"]
@@ -49,7 +49,7 @@ SPLIT_DISPLAY = {
     "random": "Random (stratified)",
     "scaffold": "Scaffold",
     "butina": "Butina",
-    "umap_kmeans": "UMAP (k-means",
+    "umap_kmeans": "UMAP (k-means)",
     "umap_ward": "UMAP (ward)",
 }
 
@@ -180,9 +180,9 @@ def grouped_bar_figure(metric_df, ylabel, title, out_path, ylim=None, zero_line=
     bar_w = 0.38
     fig, ax = plt.subplots(figsize=(9, 5.2))
     ax.bar(x - bar_w/2, vals_a, width=bar_w, yerr=sds_a, capsize=3,
-           color=COLOR_ASEX, label="Asexual (fold_test)")
+           color=COLOR_ASEX, label="Asexual")
     ax.bar(x + bar_w/2, vals_b, width=bar_w, yerr=sds_b, capsize=3,
-           color=COLOR_SEX,  label="Sexual (external)")
+           color=COLOR_SEX,  label="Sexual")
 
     ax.set_xticks(x)
     ax.set_xticklabels([SPLIT_DISPLAY[s] for s in SPLITS], rotation=15, ha="right")
@@ -229,7 +229,7 @@ def delta_bar_figure(df_hit_agg, ylabel, title, out_path):
 if "hit" in agg:
     grouped_bar_figure(
         metric_df=agg["hit"],
-        ylabel="HitRate@100",
+        ylabel="HitRate at 100",
         title="Early Recognition: Hit Rate at 100 by Split",
         out_path=OUT_DIR / "panel_hit_at_100.png",
         ylim=(0,1)
@@ -269,7 +269,7 @@ if "rho" in agg:
 if "hit" in agg:
     delta_bar_figure(
         df_hit_agg=agg["hit"],
-        ylabel="Change in Hit Rate @ 100 Sexual between Asexual Tests",
+        ylabel="Change in Hit Rate at 100 Sexual between Asexual Tests",
         title="Change in Hit Rate at 100 between Sexual and Asexual Test by Split",
         out_path=OUT_DIR / "panel_delta_hit_at_100.png",
     )
