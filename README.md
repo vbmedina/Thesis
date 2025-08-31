@@ -1,6 +1,6 @@
 # Deep-learning for the Discovery of Small-Molecule Antimalarial Drug Leads
 
-This repo contains all the codes used in the mioengineering masters thesis: Deep-learning for the Discovery of Small-Molecule Antimalarial Drug Leads. This repo can help researchers to reproduce what has been done in the article.
+This repo contains all the codes used in the mioengineering masters thesis: Deep-learning for the Discovery of Small-Molecule Antimalarial Drug Leads. This repo is meant to help researchers reproduce what has been done in my thesis.
 
 <img width="4200" height="3000" alt="missingno" src="https://github.com/user-attachments/assets/fe43d4ef-16f5-43f7-9872-1aba8f51d12c" />
 
