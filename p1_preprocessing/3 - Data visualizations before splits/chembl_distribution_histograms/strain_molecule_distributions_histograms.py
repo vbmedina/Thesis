@@ -30,10 +30,11 @@ plt.figure(figsize=(14, 8))
 sns.barplot(data=top_strains, x='Strain', y='Count', palette=strain_palette)
 
 # Customizations
-plt.xticks(rotation=45, ha='right', fontsize=9)
-plt.xlabel('Strain Identifier', fontsize=12)
-plt.ylabel('Number of pIC50 Scores', fontsize=12)
-plt.title('Top 50 Strains with the Greatest Amount of pIC50 Scores in CHEMBL364 Dataset (non-unique molecules)', fontsize=14)
+plt.xticks(rotation=45, ha='right', fontsize=12)
+plt.yticks(fontsize=20)
+plt.xlabel('Strain Identifier', fontsize=25)
+plt.ylabel('Number of pIC50 Scores', fontsize=25)
+plt.title('Top 50 Strains with the Greatest Amount of pIC50 Scores\nin CHEMBL364 Dataset (non-unique molecules)', fontsize=28)
 plt.tight_layout()
 
 # Save and display
@@ -55,10 +56,11 @@ plt.figure(figsize=(14, 8))
 sns.barplot(data=top_molecules, x='Molecule', y='Count', palette=molecule_palette)
 
 # Customizations
-plt.xticks(rotation=45, ha='right', fontsize=7)
-plt.xlabel('ChEMBL Molecule Identifier', fontsize=12)
-plt.ylabel('Number of IC50 Scores', fontsize=12)
-plt.title('Top 50 Molecules with the Greatest Amount of pIC50 Scores in CHEMBL364 Dataset (non-unique strain coverage)', fontsize=14)
+plt.xticks(rotation=45, ha='right', fontsize=12)
+plt.yticks(fontsize=20)
+plt.xlabel('ChEMBL Molecule Identifier', fontsize=25)
+plt.ylabel('Number of IC50 Scores', fontsize=25)
+plt.title('Top 50 Molecules with the Greatest Amount of pIC50 Scores\nin CHEMBL364 Dataset (non-unique strain coverage)', fontsize=28)
 plt.tight_layout()
 
 # Save and display
@@ -85,10 +87,11 @@ plt.figure(figsize=(14, 8))
 sns.barplot(data=unique_strain_counts, x='Molecule', y='UniqueStrains', palette=diversity_palette)
 
 # Customizations
-plt.xticks(rotation=45, ha='right', fontsize=7)
-plt.xlabel('ChEMBL Molecule Identifier', fontsize=12)
-plt.ylabel('Number of Unique Strains Tested', fontsize=12)
-plt.title('Top 50 Molecules by Most Unique Strain Coverage in CHEMBL364 Dataset', fontsize=14)
+plt.xticks(rotation=45, ha='right', fontsize=12)
+plt.yticks(fontsize=20)
+plt.xlabel('ChEMBL Molecule Identifier', fontsize=25)
+plt.ylabel('Number of Unique Strains Tested', fontsize=25)
+plt.title('Top 50 Molecules by Most Unique Strain Coverage\nin CHEMBL364 Dataset', fontsize=28)
 plt.tight_layout()
 
 # Save and display

@@ -62,13 +62,13 @@ ax = sns.heatmap(
 )
 
 # Rotate axis labels
-ax.set_xticklabels(ax.get_xticklabels(), rotation=90, ha='center', fontsize=12)
-ax.set_yticklabels(ax.get_yticklabels(), rotation=0, fontsize=12)
+ax.set_xticklabels(ax.get_xticklabels(), rotation=90, ha='center', fontsize=23)
+ax.set_yticklabels(ax.get_yticklabels(), rotation=0, fontsize=17)
 
 # Layout and title
-plt.title("Drug Potency of Top 50 Molecules Tested Against Chloroquine Resistant Strains", pad=20, fontsize=15)
-plt.xlabel('Strain', fontsize=12)
-plt.ylabel('Molecule ChEMBL ID', fontsize=12)
+plt.title("Drug Potency of Top 50 Molecules Tested\nAgainst Chloroquine Resistant Strains", pad=20, fontsize=60)
+plt.xlabel('Strain', fontsize=60)
+plt.ylabel('Molecule ChEMBL ID', fontsize=60)
 plt.tight_layout()
 plt.subplots_adjust(bottom=0.25)
 plt.savefig('./p1_preprocessing/3 - Data visualizations before splits/drug_resistance/cqr_hm.png', dpi=300, bbox_inches='tight')
@@ -176,13 +176,13 @@ ax = sns.heatmap(
 )
 
 # Rotate axis labels
-ax.set_xticklabels(ax.get_xticklabels(), rotation=90, ha='center', fontsize=12)
-ax.set_yticklabels(ax.get_yticklabels(), rotation=0, fontsize=12)
+ax.set_xticklabels(ax.get_xticklabels(), rotation=90, ha='center', fontsize=23)
+ax.set_yticklabels(ax.get_yticklabels(), rotation=0, fontsize=17)
 
 # Adjust layout and title
-plt.title("Drug Potency of Top 50 Molecules Tested Against Pyrimethamine Resistant Strains", pad=20, fontsize=15)
-plt.xlabel('Strain', fontsize=12)
-plt.ylabel('Molecule ChEMBL ID', fontsize=12)
+plt.title("Drug Potency of Top 50 Molecules Tested\nAgainst Pyrimethamine Resistant Strains", pad=20, fontsize=60)
+plt.xlabel('Strain', fontsize=60)
+plt.ylabel('Molecule ChEMBL ID', fontsize=60)
 plt.tight_layout()
 plt.subplots_adjust(bottom=0.25) 
 plt.savefig('./p1_preprocessing/3 - Data visualizations before splits/drug_resistance/pyrr_hm.png', dpi=300, bbox_inches='tight')
@@ -292,13 +292,13 @@ ax = sns.heatmap(
 )
 
 # Rotate axis labels
-ax.set_xticklabels(ax.get_xticklabels(), rotation=90, ha='center', fontsize=12)
-ax.set_yticklabels(ax.get_yticklabels(), rotation=0, fontsize=12)
+ax.set_xticklabels(ax.get_xticklabels(), rotation=90, ha='center', fontsize=23)
+ax.set_yticklabels(ax.get_yticklabels(), rotation=0, fontsize=17)
 
 # 8. Adjust layout and title
-plt.title("Drug Potency of Top 50 Molecules Tested Against Mefloquine Sensitive Strains", pad=20, fontsize=15)
-plt.xlabel('Strain', fontsize=12)
-plt.ylabel('Molecule ChEMBL ID', fontsize=12)
+plt.title("Drug Potency of Top 50 Molecules Tested\nAgainst Mefloquine Sensitive Strains", pad=20, fontsize=60)
+plt.xlabel('Strain', fontsize=60)
+plt.ylabel('Molecule ChEMBL ID', fontsize=60)
 plt.tight_layout()
 plt.subplots_adjust(bottom=0.25) 
 plt.savefig('./p1_preprocessing/3 - Data visualizations before splits/drug_resistance/mefs_hm.png', dpi=300, bbox_inches='tight')
