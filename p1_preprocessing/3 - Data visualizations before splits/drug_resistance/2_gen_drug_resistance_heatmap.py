@@ -56,7 +56,7 @@ ax = sns.heatmap(
     annot=True,
     fmt='.2f',
     cbar_kws={'label': 'Representative pIC50'},
-    annot_kws={'size': 12},
+    annot_kws={'size': 20},
     linewidths=0.25,
     linecolor='gray'
 )
@@ -113,19 +113,19 @@ ax = sns.heatmap(
     annot=True,
     fmt='.2f',
     cbar_kws={'label': 'Representative pIC50'},
-    annot_kws={'size': 12},
+    annot_kws={'size': 20},
     linewidths=0.25,
     linecolor='gray'
 )
 
 # Rotate axis labels
-ax.set_xticklabels(ax.get_xticklabels(), rotation=90, ha='center', fontsize=12)
-ax.set_yticklabels(ax.get_yticklabels(), rotation=0, fontsize=12)
+ax.set_xticklabels(ax.get_xticklabels(), rotation=90, ha='center', fontsize=23)
+ax.set_yticklabels(ax.get_yticklabels(), rotation=0, fontsize=17)
 
 # Adjust layout and title
-plt.title("Drug Potency of Top 50 Molecules Tested Against Mefloquine Resistant Strains", pad=20, fontsize=15)
-plt.xlabel('Strain', fontsize=12)
-plt.ylabel('Molecule ChEMBL ID', fontsize=12)
+plt.title("Drug Potency of Top 50 Molecules Tested\nAgainst Mefloquine Resistant Strains", pad=20, fontsize=60)
+plt.xlabel('Strain', fontsize=60)
+plt.ylabel('Molecule ChEMBL ID', fontsize=60)
 plt.tight_layout()
 plt.subplots_adjust(bottom=0.25) 
 plt.savefig('./p1_preprocessing/3 - Data visualizations before splits/drug_resistance/mefr_hm.png', dpi=300, bbox_inches='tight')
@@ -170,7 +170,7 @@ ax = sns.heatmap(
     annot=True,
     fmt='.2f',
     cbar_kws={'label': 'Representative pIC50'},
-    annot_kws={'size': 12},
+    annot_kws={'size': 20},
     linewidths=0.25,
     linecolor='gray'
 )
@@ -286,7 +286,7 @@ ax = sns.heatmap(
     annot=True,
     fmt='.2f',
     cbar_kws={'label': 'Representative pIC50'},
-    annot_kws={'size': 12},
+    annot_kws={'size': 20},
     linewidths=0.25,
     linecolor='gray'
 )
