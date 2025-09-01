@@ -15,9 +15,9 @@ Out of the 39,624 remaining molecules from the preprocessing pipeline, 18,875 un
 To simulate real world virtual screening scenarios, this study used the following spliting methods on different D-MPNNs (Chemprop) to evalute cross-stage generalization.
 
 - Random Split: Given the emphasis our study puts on strain preservation, we recommend a random stratified split strategy when keeping molecules with many IC50 values. This is done to benchmark random splitting methods to other studies using unique molecules.
-- Scaffold Split: Scaffold Splitting is based on the chemical scaffolds of the molecules (Bemis-Murko)
+- Scaffold Split: Scaffold Splitting is based on the chemical scaffolds of the molecules (Bemis-Murko).
 - Butina Split: The Butina Split uses a distance-based method to groups compounds into clusters based on chemical similarity.
-- UMAP-based Clustering Split`: UMAP-based Clustering uses Uniform Manifold Approximation and Projection (UMAP) for dimensionality reduction. This study used UMAP twice, once with k-means clustering and another with ward clustering.
+- UMAP-based Clustering Split: UMAP-based Clustering uses Uniform Manifold Approximation and Projection (UMAP) for dimensionality reduction. This study used UMAP twice, once with k-means clustering and another with ward clustering.
 
 <img width="3600" height="1800" alt="max_tanimoto_violins_box_2048" src="https://github.com/user-attachments/assets/68175a68-c66c-4f92-9608-17c7fd3f093f" />
 
