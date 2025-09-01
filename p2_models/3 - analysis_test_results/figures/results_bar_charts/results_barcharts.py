@@ -229,8 +229,8 @@ def delta_bar_figure(df_hit_agg, ylabel, title, out_path):
 if "hit" in agg:
     grouped_bar_figure(
         metric_df=agg["hit"],
-        ylabel="HitRate at 100",
-        title="Early Recognition: Hit Rate at 100 by Split",
+        ylabel="Hit Rate on Top 100 Molecules ",
+        title="Cross-Stage Test Results: Hit Rate on the Top 100 Molecules",
         out_path=OUT_DIR / "panel_hit_at_100.png",
         ylim=(0,1)
     )
@@ -239,8 +239,8 @@ if "hit" in agg:
 if "ef" in agg:
     grouped_bar_figure(
         metric_df=agg["ef"],
-        ylabel="EF@100",
-        title="Early Recognition: Enrichment Factor at 100 by Split",
+        ylabel="EF on Top 100 Molecules",
+        title="Cross-Stage Test Results: Enrichment Factor on the Top 100 Molecules",
         out_path=OUT_DIR / "panel_ef_at_100.png",
         ylim=None
     )
@@ -250,7 +250,7 @@ if "rmse" in agg:
     grouped_bar_figure(
         metric_df=agg["rmse"],
         ylabel="RMSE (pIC50)",
-        title="Regression Error: RMSE by Split",
+        title="Cross-Stage Test Results: Root Mean Squared Error",
         out_path=OUT_DIR / "panel_rmse.png",
     )
 
@@ -258,20 +258,20 @@ if "rmse" in agg:
 if "rho" in agg:
     grouped_bar_figure(
         metric_df=agg["rho"],
-        ylabel="Spearman",
-        title="Rank Quality: Spearman (rho) by Split",
+        ylabel="Spearman Correlation",
+        title="Cross-Stage Test Results: Rank Quality via Spearman Correlation",
         out_path=OUT_DIR / "panel_spearman.png",
         ylim=(-1, 1),
         zero_line=True
     )
 
-# 5) ΔHit@100 (Sexual - Asexual)
-if "hit" in agg:
-    delta_bar_figure(
-        df_hit_agg=agg["hit"],
-        ylabel="Change in Hit Rate at 100 Sexual between Asexual Tests",
-        title="Change in Hit Rate at 100 between Sexual and Asexual Test by Split",
-        out_path=OUT_DIR / "panel_delta_hit_at_100.png",
-    )
+# # 5) ΔHit@100 (Sexual - Asexual)
+# if "hit" in agg:
+#     delta_bar_figure(
+#         df_hit_agg=agg["hit"],
+#         ylabel="Change in Hit Rate at 100 Sexual between Asexual Tests",
+#         title="Change in Hit Rate at 100 between Sexual and Asexual Test by Split",
+#         out_path=OUT_DIR / "panel_delta_hit_at_100.png",
+#     )
 
 print("All done.")
