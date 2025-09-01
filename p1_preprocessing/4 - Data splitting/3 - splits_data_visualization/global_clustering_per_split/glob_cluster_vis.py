@@ -91,8 +91,7 @@ for m in present:
 sns.set_style("whitegrid")
 
 # Subplots
-plt.rcParams["axes.titlesize"] = 14
-plt.rcParams["axes.titleweight"] = "bold"
+plt.rcParams["axes.titlesize"] = 16
 n = len(present)
 fig, axes = plt.subplots(1, n, figsize=(5*n, 5), sharex=True, sharey=True)
 if n == 1: axes = [axes]
@@ -138,8 +137,8 @@ fig.legend(
     handleheight=0.6,
     handletextpad=0.2,
     labelspacing=0.5,
-    prop={"size": 12},
-    title_fontsize=14)
+    prop={"size": 16},
+    title_fontsize=18)
 
 
 # Suptitle, layout, save

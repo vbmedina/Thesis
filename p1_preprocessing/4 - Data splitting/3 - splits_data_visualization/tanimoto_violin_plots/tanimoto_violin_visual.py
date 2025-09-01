@@ -188,13 +188,13 @@ def main():
     )
 
     # Use nicer method names on the x-axis
-    ax.set_xticklabels([DISPLAY_NAME.get(m, m) for m in order], rotation=0)
+    ax.set_xticklabels([DISPLAY_NAME.get(m, m) for m in order], rotation=0, fontsize=13)
 
     # Labels
-    ax.set_xlabel("Splitting Method")
-    ax.set_ylabel("Max Tanimoto Similarity to Training Set")
+    ax.set_xlabel("Splitting Method", fontsize=15)
+    ax.set_ylabel("Max Tanimoto Similarity to Training Set", fontsize=15)
     ax.set_ylim(0, 1.2)  # upper limit > 1 to leave space for text labels
-    ax.set_title("Train-Test Tanimoto by Split", pad=12)
+    ax.set_title("Train-Test Tanimoto by Split", pad=12, fontsize = 18)
 
     # Annotate percentiles & median
     x_pos = {m: i for i, m in enumerate(order)}
@@ -211,19 +211,19 @@ def main():
 
         # Median
         ax.hlines(med, x-0.28, x-0.08, colors="black", linewidth=1.3)
-        ax.text(x-0.35, med, f"{med:.2f}", ha="right", va="center", fontsize=9)
+        ax.text(x-0.35, med, f"{med:.2f}", ha="right", va="center", fontsize=10, fontweight="bold")
 
         # 5th/95th percentile
         ax.hlines(p95, x+0.08, x+0.28, colors="black", linewidth=1.3)
-        ax.text(x+0.35, p95, f"{p95:.2f}", ha="left",  va="center", fontsize=9)
+        ax.text(x+0.35, p95, f"{p95:.2f}", ha="left",  va="center", fontsize=10, fontweight="bold")
         ax.hlines(p05, x+0.08, x+0.28, colors="black", linewidth=1.3)
-        ax.text(x+0.35, p05, f"{p05:.2f}", ha="left",  va="center", fontsize=9)
+        ax.text(x+0.35, p05, f"{p05:.2f}", ha="left",  va="center", fontsize=10, fontweight="bold")
 
         # Q1 & Q3 labels
         ax.hlines(q1, x-0.08, x-0.28, colors="black", linewidth=1.3)
-        ax.text(x-0.35, q1, f"{q1:.2f}", ha="right", va="center", fontsize=9)
+        ax.text(x-0.35, q1, f"{q1:.2f}", ha="right", va="center", fontsize=10, fontweight="bold")
         ax.hlines(q3, x-0.08, x-0.28, colors="black", linewidth=1.3)
-        ax.text(x-0.35, q3, f"{q3:.2f}", ha="right", va="center", fontsize=9)
+        ax.text(x-0.35, q3, f"{q3:.2f}", ha="right", va="center",fontsize=10, fontweight="bold")
 
     # Out
     fig.tight_layout()
