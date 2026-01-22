@@ -1,23 +1,34 @@
-# Deep-learning for the Discovery of Small-Molecule Antimalarial Drug Leads
+<div align="center">
+  <center><h1> Deep-learning for the Discovery of Small-Molecule <br> Antimalarial Drug Leads</h1></center>
+</div>
 
-This repo contains all the codes used in the mioengineering masters thesis: Deep-learning for the Discovery of Small-Molecule Antimalarial Drug Leads. This repo is meant to help researchers reproduce what has been done in my thesis.
+This repo contains the scripts used in the bioengineering masters thesis: Deep-learning for the Discovery of Small-Molecule Antimalarial Drug Leads. This repo is dedicated to helping researchers reproduce what has been done in this thesis. Malaria, caused by the parasite Plasmodium falciparum, is considered to be the deadliest form of its species in humans and remains a major global health threat. P. falciparum exhibits multiple distinct life stages, including asexual and sexual gametocyte blood stages. Asexual replication in human blood causes malaria symptoms by multiplying rapidly, while sexual stages (gametocytes) are non-replicating forms that develop for mosquito transmission, enabling the parasite's life cycle to continue in the insect vector and infect new humans. Both present unique drug susceptibility profiles and biochemical chemical pathways driven by its genetically volatile nature. P. faliparum's biggest data repository, CHEMBL, is greatly composed of molecules directed towards the asexual blood stage (97%). 
+The use of deep learning in virtual screenings (VS) has shown promising results in identifying active molecules against P. falciparum. One common pitfall in VS is the inability of traditional splitting methods to identify novel molecules as potential targets. The use of both Directed Message Passing Neural Networks in combination with Uniform Manifold Approximation (UMAP) based clustering methods has been identified as a solution to overcome the problem of both biological and chemical generalizability for novel anti-malarial identification. 
 
-<img width="4200" height="3000" alt="missingno" src="https://github.com/user-attachments/assets/fe43d4ef-16f5-43f7-9872-1aba8f51d12c" />
+<p align="center">
+  <img width="784" height="580" alt="Screenshot 2026-01-22 at 12 25 26 pm" src="https://github.com/user-attachments/assets/b4b87f27-ea51-4d1f-ab70-81fd93f6eee6" />
+</p>
 
 ## ChEMBL Dataset
-This study recommends the following pipeline to streamline preprocessing time of the CHMBL364 dataset, especially in scenarios where P. falciparum strains are needed.
+This study recommends the following pipeline to streamline preprocessing time of the CEHMBL364 dataset found in as a downloadable CSV file on the ChEMBL wesbite. This is particularly important in cases where P. falciparum strains are needed for data analysis as many meta data labels are inaccurate, incomplete, inconsistent, or outdated.
 
-<img width="794" height="111" alt="Screenshot 2025-08-31 at 10 24 47 pm" src="https://github.com/user-attachments/assets/6bff7c54-1978-4c48-a033-36d67b006016" />
+<p align="center">
+  <img width="794" height="111" alt="Screenshot 2025-08-31 at 10 24 47 pm" src="https://github.com/user-attachments/assets/6bff7c54-1978-4c48-a033-36d67b006016" />
+</p>
 
-Out of the 39,624 remaining molecules from the preprocessing pipeline, 18,875 unique molecules and 263 unique strains. We used ChEMBL_35 which was accessed in February of 2025.
+This project used the ChEMBL_35 version and was accessed in February of 2025. Upon using the recommended pre-processing pipeline, as shown above, the final dataset contains a total of 39,624 molecules. Of the 39,624 molecules a total of 18,875 unique molecules and 263 unique strains were found. As a note, many molecules in the dataset have multiple IC50 values and or tested on multiple variants of the P. falciparum strain therefore are non-unique.
+
+<p align="center">
+  <img width="4200" height="3000" alt="missingno" src="https://github.com/user-attachments/assets/fe43d4ef-16f5-43f7-9872-1aba8f51d12c" />
+</p>
 
 ## Introduction to the Splits
-To simulate real world virtual screening scenarios, this study used the following spliting methods on different D-MPNNs (Chemprop) to evalute cross-stage generalization.
+To simulate real world virtual screening scenarios, this study used the following spliting methods on Directed Message Passing Neural Networks (Chemprop) to evalute cross-stage generalization.
 
 - Random Split: Given the emphasis our study puts on strain preservation, we recommend a random stratified split strategy when keeping molecules with many IC50 values. This is done to benchmark random splitting methods to other studies using unique molecules.
-- Scaffold Split: Scaffold Splitting is based on the chemical scaffolds of the molecules (Bemis-Murko).
+- Scaffold Split: Scaffold Splitting uses the chemical scaffolds of molecules (Bemis-Murko).
 - Butina Split: The Butina Split uses a distance-based method to groups compounds into clusters based on chemical similarity.
-- UMAP-based Clustering Split: UMAP-based Clustering uses Uniform Manifold Approximation and Projection (UMAP) for dimensionality reduction. This study used UMAP twice, once with k-means clustering and another with ward clustering.
+- UMAP-based Clustering Split: UMAP-based Clustering uses Uniform Manifold Approximation and Projection (UMAP) for dimensionality reduction. This study uses UMAP twice, once with k-means clustering and another with ward clustering.
 
 <img width="3600" height="1800" alt="max_tanimoto_violins_box_2048" src="https://github.com/user-attachments/assets/68175a68-c66c-4f92-9608-17c7fd3f093f" />
 
