@@ -7,7 +7,9 @@ The use of deep learning in virtual screenings (VS) has shown promising results 
   <img width="784" height="580" alt="Screenshot 2026-01-22 at 12 25 26 pm" src="https://github.com/user-attachments/assets/b4b87f27-ea51-4d1f-ab70-81fd93f6eee6" />
 </p>
 
-<img width="4200" height="3000" alt="missingno" src="https://github.com/user-attachments/assets/fe43d4ef-16f5-43f7-9872-1aba8f51d12c" />
+<p align="center">
+  <img width="4200" height="3000" alt="missingno" src="https://github.com/user-attachments/assets/fe43d4ef-16f5-43f7-9872-1aba8f51d12c" />
+</p>
 
 ## ChEMBL Dataset
 This study recommends the following pipeline to streamline preprocessing time of the CEHMBL364 dataset found in as a downloadable CSV file on the ChEMBL wesbite. This is particularly important in cases where P. falciparum strains are needed for data analysis as many meta data labels are inaccurate, incomplete, inconsistent, or outdated.
