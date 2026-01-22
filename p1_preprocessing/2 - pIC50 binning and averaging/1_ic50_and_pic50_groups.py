@@ -1,4 +1,5 @@
-''' Description: This script is the 1st part in finding a measure of center for molecules found in the cleaned 
+''' 
+Description: This script is the 1st part in finding a measure of center for molecules found in the cleaned 
 ChEMBL dataset. Many molecules in the dataset have multiple pIC50 values for the same strain. This section aims 
 to aggregate these strain-molecule pairs with all of their IC50 and pIC50 values. The output is a CSV file that 
 contains the number of each pairing, and their respective IC50 and pIC50 scores. 

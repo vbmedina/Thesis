@@ -6,7 +6,7 @@ Requirements:
 2) "mapped_resistance_flags.csv" - A pre-made mapping of flags to their groups. If using a different dataset,
 or updated dataset this file will need to be updated.
 '''
-
+# Imports
 import pandas as pd
 
 ''' Section 1. Create personalized strain scraping CSV file with drug resistance flags.

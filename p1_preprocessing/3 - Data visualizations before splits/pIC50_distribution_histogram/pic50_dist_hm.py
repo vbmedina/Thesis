@@ -9,7 +9,7 @@ References:
 Requirements:
 1) final_data.csv - from Step 2 if pipeline.
 '''
-
+# Imports
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -24,7 +24,7 @@ upper_threshold = 7.5
 bins = 60
 figsize = (7, 4)
 
-# DF
+# Data frame
 df = pd.read_csv(csv_path, low_memory=False)
 
 # Category Counts
@@ -38,8 +38,8 @@ bin_centers = 0.5 * (bin_edges[:-1] + bin_edges[1:])
 
 # Colour Mapping
 c_inactive = 'tab:blue'
-c_active   = 'tab:orange'
-c_high     = 'tab:green'
+c_active = 'tab:orange'
+c_high = 'tab:green'
 
 bar_colors = np.where(
     bin_centers < main_threshold, c_inactive,
@@ -58,15 +58,15 @@ lt_high   = ax.axvline(upper_threshold, ls="-.", lw=2.0, color="black")
 # Legend Patches
 patch_inactive = patches.Patch(color=c_inactive,
                                label=f"Inactive (<{main_threshold}): {inactive_count:,}")
-patch_active   = patches.Patch(color=c_active,
+patch_active = patches.Patch(color=c_active,
                                label=f"Active (≥{main_threshold} & <{upper_threshold}): {active_count:,}")
-patch_high     = patches.Patch(color=c_high,
+patch_high = patches.Patch(color=c_high,
                                label=f"High-potency (≥{upper_threshold}): {high_count:,}")
 
 # legend Lines
 line_active = lines.Line2D([], [], color="black", lw=2, linestyle="-",
                            label=f"Active threshold (pIC50={main_threshold})")
-line_high   = lines.Line2D([], [], color="black", lw=2, linestyle="-.",
+line_high = lines.Line2D([], [], color="black", lw=2, linestyle="-.",
                            label=f"High-potency threshold (pIC50={upper_threshold})")
 
 # Handles

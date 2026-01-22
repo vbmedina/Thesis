@@ -1,6 +1,8 @@
-''' Description: This script is not needed for pipeline. This script is only when starting a new project and is to help start the process 
+''' 
+Description: This script is not needed for pipeline. This script is only when starting a new project and is to help start the process 
 of strain scraping using known spellings and nomenclature rules to establish a baseline for strain names. Due to the amount of 
-unique strains and isolates in research. This list is only a start and CSV data should be manually checked.'''
+unique strains and isolates in research. This list is only a start and CSV data should be manually checked.
+'''
 
 # Imports
 import pandas as pd

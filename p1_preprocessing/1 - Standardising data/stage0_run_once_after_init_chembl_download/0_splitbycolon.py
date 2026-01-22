@@ -1,6 +1,8 @@
-''' Description: This script is not needed for pipeline. Only use when freshly downloading CSV files from ChEMBL. Data directly
+''' 
+Description: This script is not needed for pipeline. Only use when freshly downloading CSV files from ChEMBL. Data directly
 downloaded from ChEMBL as a CSV is automatically downloaded with semicolon-delimiters. This script convert the CSV to a 
-comma-delimited file.''' 
+comma-delimited file.
+''' 
 
 # Import
 import csv

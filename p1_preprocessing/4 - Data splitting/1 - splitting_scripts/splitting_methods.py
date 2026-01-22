@@ -69,10 +69,10 @@ https://jcheminf.biomedcentral.com/articles/10.1186/s13321-025-01039-8;
 3) https://arxiv.org/pdf/2406.00873
 4) https://umap-learn.readthedocs.io/en/latest/faq.html
 5) https://pubs.acs.org/doi/10.1021/acsmedchemlett.4c00093
-
 """
 
-# conda activate molml
+# Conda activate molml
+# Imports
 import pandas as pd
 import numpy as np
 from pathlib import Path
@@ -89,7 +89,7 @@ RDLogger.DisableLog("rdApp.warning")
 
 # Input/Output files
 INPUTFILE = "./p1_preprocessing/4 - Data splitting/1 - splitting_scripts/final_data_copy.csv"
-OUTROOT  = Path("./p1_preprocessing/4 - Data splitting/2 - split_data")
+OUTROOT = Path("./p1_preprocessing/4 - Data splitting/2 - split_data")
 
 # Settings
 SEED = np.random.randint(1, 10000000000)
@@ -303,7 +303,7 @@ def main():
                     sims = DataStructs.BulkTanimotoSimilarity(fps[i], tr_fps)
                     max_sims.append(max(sims) if len(sims) else 0.0)
                 mean_max = float(np.mean(max_sims))
-            line = f"    mean max-Tanimoto(test-train) = {mean_max:.3f}"
+            line = f" mean max-Tanimoto(test-train) = {mean_max:.3f}"
             print(line); log.append(line)
 
     log.append(f"Random seed: {SEED}")

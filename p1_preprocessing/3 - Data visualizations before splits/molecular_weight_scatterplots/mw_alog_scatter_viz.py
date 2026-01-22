@@ -1,4 +1,5 @@
-''' Description: This script visualizes the relationship between molecular weight and AlogP through a scatter plot, with 
+''' 
+Description: This script visualizes the relationship between molecular weight and AlogP through a scatter plot, with 
 points colored by pIC50 values and sized by the number of assay measurements per molecule. This analysis employs an 
 empirically-derived "FDA-Approved Drug-Like Zone" based on 11 FDA-approved antimalarial drugs from the FDA's Orange Book 
 database, establishing boundaries of MW between 250-530 Da and AlogP between 2.0-9.0 (1). Lipinski's Rule of Five (2) is not 
@@ -15,7 +16,7 @@ References:
 Requirements:
 1) final_data.csv - from Step 2 if pipeline.
 '''
-
+# Imports
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -50,9 +51,9 @@ sns.scatterplot(
 
 # Define your empirical antimalarial zone
 min_logp, max_logp = 2.0, 9.0
-min_mw,    max_mw    = 250.0, 530.0
-width  = max_logp - min_logp
-height = max_mw    - min_mw
+min_mw, max_mw = 250.0, 530.0
+width = max_logp - min_logp
+height = max_mw - min_mw
 
 # Add a Rectangle patch in data‐coords
 antimalarial_rect = mpatches.Rectangle(

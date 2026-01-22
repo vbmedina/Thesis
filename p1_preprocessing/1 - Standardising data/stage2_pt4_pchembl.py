@@ -1,10 +1,11 @@
-''' Description: This script is the second stage to the pipeline (IC50). It works on the IC50 scores.
+''' 
+Description: This script is the second stage to the pipeline (IC50). It works on the IC50 scores.
 This script:
 1) Converts IC50 ("Standard_Value") values to pIC50 values - new column "pIC50"
 
-
 Preconditions:
-1) "postphase2_deleteEquiv.csv" - generated from stage2 pt3'''
+1) "postphase2_deleteEquiv.csv" - generated from stage2 pt3
+'''
 
 # Imports
 import pandas as pd

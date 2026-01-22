@@ -2,7 +2,7 @@
 Description: This script creates data bins for each fold using each splitting method.
 
 Requirements:
-    - Splitting methods completed from 2 - split_data
+    1) Splitting methods completed from 2 - split_data
 '''
 
 from pathlib import Path
@@ -11,7 +11,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 #  onfig
-BASE    = Path("./p1_preprocessing/4 - Data splitting/2 - split_data")
+BASE = Path("./p1_preprocessing/4 - Data splitting/2 - split_data")
 METHODS = ["random","scaffold","butina","umap_kmeans","umap_ward"]
 FOLDS   = [1,2,3,4,5]
 SUBSETS = ["train", "val", "test"]
@@ -28,7 +28,7 @@ DISPLAY_NAME = {
 }
 
 # bins & tick labels (like the paper)
-BINS   = [4.0, 5.0, 6.0, 7.0, np.inf]
+BINS = [4.0, 5.0, 6.0, 7.0, np.inf]
 XLABEL = ["4–5", "5–6", "6–7", ">7"]
 
 def find_csv(method: str, fold: int, subset: str) -> Path | None:

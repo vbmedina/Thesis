@@ -1,9 +1,11 @@
-''' Description: This script is the second stage to the pipeline (IC50). It works on the IC50 scores.
+''' 
+Description: This script is the second stage to the pipeline (IC50). It works on the IC50 scores.
 This script:
 1) Removes exact duplicate rows from a CSV file.
 
 Preconditions:
-1) "postphase2_convertedUnits.csv" - generated from stage2 pt1'''
+1) "postphase2_convertedUnits.csv" - generated from stage2 pt1
+'''
 
 from pathlib import Path
 import pandas as pd
@@ -19,7 +21,7 @@ df = pd.read_csv(csv_in)
 # Note: This will keep the first occurrence of each duplicate row and remove subsequent duplicates.
 before = len(df)
 df = df.drop_duplicates()
-after  = len(df)
+after = len(df)
 
 # Save
 df.to_csv(csv_out, index=False)

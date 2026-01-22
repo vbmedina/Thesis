@@ -10,8 +10,9 @@ Outputs
 - ./p2_models/analysis_outputs/topk_metrics_by_split_fold_rows.csv
   Columns include: split, fold, dataset, hit_at_k/ef_at_k/mcc_at_k,
   hit_at_kpct/ef_at_kpct/mcc_at_kpct, prevalence, k_used, k_pct_used, n_rows, and counts.
-
 '''
+
+# Imports
 from __future__ import annotations
 import argparse, math
 from dataclasses import dataclass
@@ -52,6 +53,7 @@ def parse_args() -> Config:
         folds=folds
     )
 
+# CSV 
 def load_pred_csv(base_root: Path, split: str, fold: int, tag: str) -> pd.DataFrame:
     """tag in {'fold_test','sexual_data'}"""
     fn = f"pred_vs_true_{'fold_test' if tag=='fold_test' else 'sexual_data'}.csv"
@@ -63,11 +65,13 @@ def load_pred_csv(base_root: Path, split: str, fold: int, tag: str) -> pd.DataFr
         raise ValueError(f"{p} must contain columns: y_true, y_pred")
     return df
 
+# MCC confusion matrix
 def mcc_from_confusion(tp, fp, tn, fn) -> float:
     den = (tp+fp)*(tp+fn)*(tn+fp)*(tn+fn)
     if den <= 0: return 0.0
     return float((tp*tn - fp*fn) / (den ** 0.5))
 
+# Adding metrics to results
 def early_metrics_rows(df: pd.DataFrame, thr: float, k_abs: int, k_frac: float) -> Dict[str, float]:
     """Row-level early-recognition metrics (keep replicates)."""
     N = len(df)
@@ -80,7 +84,7 @@ def early_metrics_rows(df: pd.DataFrame, thr: float, k_abs: int, k_frac: float) 
             "tp_at_k","expected_tp_at_k","tp_at_kpct","expected_tp_at_kpct"
         ]}
 
-    # sort rows by predicted pIC50 (desc)
+    # Sort rows by predicted pIC50 (desc)
     order = np.argsort(-df["y_pred"].to_numpy())
     y_true = df["y_true"].to_numpy()
     yb = (y_true >= thr).astype(int)

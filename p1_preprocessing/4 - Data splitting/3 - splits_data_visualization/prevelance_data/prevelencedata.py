@@ -22,15 +22,15 @@ import re
 import numpy as np
 import pandas as pd
 
-# ---------- CONFIGURE THESE PATHS ----------
+# Configuring paths
 SPLIT_ROOT = Path("p1_preprocessing/4 - Data splitting/2 - split_data")
 OUT_CSV = Path("p1_preprocessing/4 - Data splitting/3 - splits_data_visualization/prevelance_data/prevelancedata.csv")
 
-# activity definition
+# Activity definition
 PIC50_THRESHOLD = 6.0
 PIC50_CANDIDATES = ["pIC50", "pic50", "p_ic50", "PIC50"]
 
-# preferred reporting order & pretty labels
+# Preferred reporting order & pretty labels
 SPLIT_ORDER = ["random", "scaffold", "butina", "umap_kmeans", "umap_ward"]
 SPLIT_DISPLAY = {
     "random": "Random (stratified)",
@@ -41,10 +41,10 @@ SPLIT_DISPLAY = {
 }
 SUBSET_ORDER = ["train", "val", "test"]
 
-# parse names like "<split>_fold_<n>_<subset>.csv"
+# Parse names like "<split>_fold_<n>_<subset>.csv"
 FILE_RE = re.compile(r"(?P<split>[^/\\]+)_fold_(?P<fold>\d+)_(?P<subset>train|val|test)\.csv$", re.IGNORECASE)
 
-# map various tokens to canonical split keys above
+# Map various tokens to canonical split keys above
 EXACT_SPLIT_MAP = {
     "random": "random",
     "random_stratified": "random",
@@ -127,12 +127,12 @@ def main():
 
     by_file = pd.DataFrame(rows)
 
-    # keep only successful rows
+    # Keep successful rows
     ok = by_file[by_file["status"] == "ok"].copy()
     if ok.empty:
         raise SystemExit("No valid rows to summarize (all failed).")
 
-    # pooled counts per split × subset, plus mean±SD across folds
+    # Pooled counts per split × subset, plus mean±SD across folds
     pooled = (ok.groupby(["split_key", "subset"], as_index=False)
                 .agg(n_total=("n_total", "sum"),
                      n_active=("n_active", "sum"),
@@ -143,13 +143,13 @@ def main():
 
     pooled["prevalence_active_pooled"] = pooled["n_active"] / pooled["n_total"]
 
-    # add pretty labels + sort
+    # Add pretty labels + sort
     pooled["split"] = pooled["split_key"].map(SPLIT_DISPLAY).fillna(pooled["split_key"])
     pooled["subset"] = pd.Categorical(pooled["subset"], categories=SUBSET_ORDER, ordered=True)
     pooled["split_key"] = pd.Categorical(pooled["split_key"], categories=SPLIT_ORDER, ordered=True)
     pooled = pooled.sort_values(["split_key", "subset"]).reset_index(drop=True)
 
-    # final column order
+    # Final column order
     cols = [
         "split_key", "split", "subset", "folds",
         "n_total", "n_active", "n_inactive",

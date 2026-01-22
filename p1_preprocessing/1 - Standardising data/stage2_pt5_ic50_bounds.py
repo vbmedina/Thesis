@@ -1,15 +1,18 @@
-''' Description: This script is the second stage to the pipeline (IC50). It works on the IC50 scores.
+''' 
+Description: This script is the second stage to the pipeline (IC50). It works on the IC50 scores.
+1) This script: Adds activity boundaries and defines active and inactive.
 
 Preconditions:
-1) "postphase2_CorrectpIC50.csv" - generated from stage2 pt4'''
+1) "postphase2_CorrectpIC50.csv" - generated from stage2 pt4
+'''
 
 # Import
 import pandas as pd
 import numpy as np
 
 # Paths
-in_path   = "./p0_all_csvs/postphase2_4.csv"      
-out_path  = "./p0_all_csvs/postphase2_5.csv"               
+in_path = "./p0_all_csvs/postphase2_4.csv"      
+out_path = "./p0_all_csvs/postphase2_5.csv"               
 
 # Load the data
 df = pd.read_csv(in_path)

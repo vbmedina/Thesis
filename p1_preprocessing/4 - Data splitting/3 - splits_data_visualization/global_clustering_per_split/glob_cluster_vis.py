@@ -1,4 +1,5 @@
-''' Description: This script generates a visualization of the global clustering of test molecules across different data splits
+''' 
+Description: This script generates a visualization of the global clustering of test molecules across different data splits
 and folds using UMAP on ECFP4 fingerprints.
 
 Preconditions:

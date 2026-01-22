@@ -1,4 +1,5 @@
-''' Description: This script generates violin and box plots to visualize the distribution of maximum Tanimoto similarities
+''' 
+Description: This script generates violin and box plots to visualize the distribution of maximum Tanimoto similarities
 between test molecules and their nearest neighbors in the training set across different data splitting methods and folds.
 
 Preconditions:
@@ -20,11 +21,11 @@ from rdkit.Chem import rdFingerprintGenerator as FPG
 RDLogger.DisableLog("rdApp.warning")
 
 # Base directories
-PROJECT   = Path("./p1_preprocessing/4 - Data splitting")
+PROJECT = Path("./p1_preprocessing/4 - Data splitting")
 DATA_ROOT = PROJECT
 
 BASE_DIRS = [DATA_ROOT / "2 - split_data"]
-SPLITS    = ["random", "scaffold", "butina", "umap_kmeans", "umap_ward"]
+SPLITS = ["random", "scaffold", "butina", "umap_kmeans", "umap_ward"]
 
 # Display names for nicer axis labels
 DISPLAY_NAME = {
@@ -35,8 +36,8 @@ DISPLAY_NAME = {
     "umap_ward": "UMAP (ward)",
 }
 
-FOLDS     = [1, 2, 3, 4, 5]
-SMI_COL   = "Smiles"
+FOLDS = [1, 2, 3, 4, 5]
+SMI_COL = "Smiles"
 
 RADIUS = 2
 N_BITS = 2048

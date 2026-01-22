@@ -1,11 +1,13 @@
-''' Description: This script is the first stage to the pipeline (strains). It works on the strain and isolate names.
+''' 
+Description: This script is the first stage to the pre-processing pipeline (strains). It works on the strain and isolate names.
 This script:
-1) bins synonyms of strains and isolates into a single name. (binning based on parental similarity)
+1) Bins synonyms of strains and isolates into a single name. (binning based on parental similarity)
 
 Preconditions:
-1) "prephase1.csv" - which comes from both part 0, and manually adding "stand_strain". "stand_strain" has all the raw strains and isolates. 
-2) "list_of_strains.csv" - pre-generated map of strain synonyms to single strain name.
-3) "list_of_isolates.csv" - pre-generated map of isolate synonyms to single isolate name.'''
+1) "prephase1.csv" -  Generated in stage 0, and manually adding "stand_strain". "stand_strain" has all the raw strains and isolates. 
+2) "list_of_strains.csv" - Pre-generated map of strain synonyms to single strain name.
+3) "list_of_isolates.csv" - Pre-generated map of isolate synonyms to single isolate name.
+'''
 
 # Imports
 from pathlib import Path

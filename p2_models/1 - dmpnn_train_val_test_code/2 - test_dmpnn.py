@@ -29,6 +29,8 @@ Outputs
 Notes
 - Evaluation is CPU-only and uses a fixed seed for determinism of non-GPU components.
 '''
+
+# Imports
 from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
@@ -61,11 +63,11 @@ HR_AT_K_COL = f"hr_at_{K_HIT_RATE}"
 EF_AT_K_COL = f"ef_at_{K_HIT_RATE}"
 
 TARGET_MODELS = {
-    "random":      1,
-    "scaffold":    1,
-    "butina":      2,
+    "random": 1,
+    "scaffold": 1,
+    "butina": 2,
     "umap_kmeans": 1,
-    "umap_ward":   5,
+    "umap_ward": 5,
 }
 
 # Config

@@ -1,9 +1,11 @@
-''' Description: This script is the third stage to the pipeline (Filtering Sexual Assays).
+''' 
+Description: This script is the third stage to the pipeline (Filtering Sexual Assays).
 This script:
 1) Clasifies rows as asexual or sexual assays. - clasifies by specific keywords in assay descriptions
 
 Preconditions:
-1) "postphase2_cleaned.csv" - generated from stage2 pt5'''
+1) "postphase2_cleaned.csv" - generated from stage2 pt5
+'''
 
 # Import
 import re
@@ -36,9 +38,9 @@ df_asec = df[~is_sex].copy()
 df_sec = df[is_sex].copy()
 
 # Count number of sexual and asexual rows
-n_total     = len(df)
-n_sex       = int(is_sex.sum())
-n_asec      = n_total - n_sex
+n_total = len(df)
+n_sex = int(is_sex.sum())
+n_asec = n_total - n_sex
 
 # Print results
 print(f"• Scanned {n_total:,} rows")

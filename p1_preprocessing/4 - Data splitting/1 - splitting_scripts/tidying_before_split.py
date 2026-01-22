@@ -1,11 +1,12 @@
 # Not required! 
-# This script add potency bins, frequency counts, check duplicates
+# This script adds potency bins, frequency counts, checks duplicates
 
+# Imports
 from pathlib import Path
 import pandas as pd
 
 # Config
-inputcsv  = Path("./pp.csv")
+inputcsv = Path("./pp.csv")
 outputcsv = Path("./pp_tidy.csv")
 essentials = ["Smiles", "Strains", "pIC50"] 
 

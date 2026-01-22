@@ -18,6 +18,7 @@ References (code/data in paper):
 1) CHEMPROP: https://github.com/chemprop/chemprop
 """
 
+# Imports
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -44,10 +45,10 @@ test_at_best = val_loss[best_idx] + 0.03
 
 # Plotting parameters colors
 train_color = "0.35"
-val_color   = "#b91c1c"
-star_color  = "#facc15"
+val_color = "#b91c1c"
+star_color = "#facc15"
 shade_color = "#fecaca"
-stop_color  = "#b91c1c"
+stop_color = "#b91c1c"
 
 plt.rcParams.update({
     "axes.spines.top": False, "axes.spines.right": False,
@@ -76,7 +77,7 @@ ax.text(
     stop_epoch + 0.6,
     0.50,
     "training stops",
-    transform=ax.get_xaxis_transform(),  # x in data coords, y in axes fraction
+    transform=ax.get_xaxis_transform(), # x in data coords, y in axes fraction
     rotation=90,
     va="center", ha="left",
     color=stop_color, fontsize=9,

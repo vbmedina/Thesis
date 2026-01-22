@@ -1,4 +1,5 @@
-''' Description: This script is the second stage to the pipeline (IC50). It works on the IC50 scores.
+''' 
+Description: This script is the second stage to the pipeline (IC50). It works on the IC50 scores.
 This script: 
 1) deletes rows where "Standard Relation" column contains "~", ">", "≈", "NA", and "0".
 
@@ -16,7 +17,7 @@ csv_out = Path("./p0_all_csvs/postphase2_3.csv")
 # Load DF
 df = pd.read_csv(csv_in)
 
-# If the "Standard Relation" row contains a ~, >, ≈, NA or 0, remove it
+# If the "Standard Relation" row contains the values: ~, >, ≈, NA or 0. They are removed.
 before = len(df)
 df = df.dropna(subset=["Standard Relation"])
 df = df[~df["Standard Relation"].str.contains("~", na=False)]

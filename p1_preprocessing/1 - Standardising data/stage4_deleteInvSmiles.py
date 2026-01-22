@@ -1,4 +1,5 @@
-''' Description: This script is the fourth stage to the pipeline (SMILES). It works on the SMILES.
+''' 
+Description: This script is the fourth stage to the pipeline (SMILES). It works on the SMILES.
 This script:
 1) removes rows with invalid SMILES.
 

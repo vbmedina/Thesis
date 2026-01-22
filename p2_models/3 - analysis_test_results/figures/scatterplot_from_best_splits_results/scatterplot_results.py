@@ -20,6 +20,8 @@ Procedure
 Outputs
 - p2_models/analysis_outputs/figures/scatter_true_vs_pred_<split>_fold<k>.png
 '''
+
+# Imports
 from pathlib import Path
 import numpy as np
 import pandas as pd
@@ -28,9 +30,9 @@ import seaborn as sns
 from sklearn.metrics import roc_auc_score, mean_squared_error
 from math import sqrt
 
-# --------- CONFIG ---------
+# Configuration
 BASE_MODELS = Path("p2_models/2 - train_val_test_results")
-OUT_DIR     = Path("p2_models/3 - analysis_test_results/figures/scatterplot_from_best_splits_results")
+OUT_DIR = Path("p2_models/3 - analysis_test_results/figures/scatterplot_from_best_splits_results")
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
 SELECTED = [

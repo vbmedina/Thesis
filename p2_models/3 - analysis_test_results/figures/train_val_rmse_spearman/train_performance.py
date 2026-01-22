@@ -1,8 +1,10 @@
-''' Description: Create dot plot with validation results contrasting RMSE to Spearman's rho
+''' 
+Description: Create dot plot with validation results contrasting RMSE to Spearman's rho
 
 Requirements:
     - Non import requirement: Raw test data
 '''
+# Imports
 import math
 import pandas as pd
 import seaborn as sns
@@ -10,11 +12,11 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as mticker
 
 train_rows = [
-    {"Split": "Random",         "Fold": 1, "RMSE": 0.413, "Spearman": 0.950, "n": 28349},
-    {"Split": "Scaffold",       "Fold": 1, "RMSE": 0.385, "Spearman": 0.956, "n": 25897},
-    {"Split": "Butina",         "Fold": 2, "RMSE": 0.373, "Spearman": 0.960, "n": 28465},
+    {"Split": "Random", "Fold": 1, "RMSE": 0.413, "Spearman": 0.950, "n": 28349},
+    {"Split": "Scaffold", "Fold": 1, "RMSE": 0.385, "Spearman": 0.956, "n": 25897},
+    {"Split": "Butina", "Fold": 2, "RMSE": 0.373, "Spearman": 0.960, "n": 28465},
     {"Split": "UMAP (k-means)", "Fold": 1, "RMSE": 0.397, "Spearman": 0.954, "n": 31422},
-    {"Split": "UMAP (ward)",    "Fold": 5, "RMSE": 0.403, "Spearman": 0.951, "n": 31166},
+    {"Split": "UMAP (ward)", "Fold": 5, "RMSE": 0.403, "Spearman": 0.951, "n": 31166},
 ]
 
 df = pd.DataFrame(train_rows)

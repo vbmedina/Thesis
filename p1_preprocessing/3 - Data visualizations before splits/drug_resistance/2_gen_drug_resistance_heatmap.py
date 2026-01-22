@@ -1,11 +1,11 @@
-''' Description: This script uses the CSV file generated from the Step 1. 1_mapping_drug_resistance.py
+''' 
+Description: This script uses the CSV file generated from the Step 1. 1_mapping_drug_resistance.py
 to create heatmaps for different drug resistance flags. It visualizes the drug potency of the top 50 molecules
 tested against various strains, categorized by their resistance flags.
 
 Requirements:
-* Final Data with Flags from step 1_mapping_drug_resistance.py
+1) Final Data with Flags from step 1_mapping_drug_resistance.py
 '''
-
 # Imports
 import pandas as pd
 import matplotlib.pyplot as plt

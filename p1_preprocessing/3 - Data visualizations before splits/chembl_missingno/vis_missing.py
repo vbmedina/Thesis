@@ -1,4 +1,5 @@
-''' Description: This script generates a Missingno heatmap visualizing the completeness of strain-molecule pairings for 
+''' 
+Description: This script generates a Missingno heatmap visualizing the completeness of strain-molecule pairings for 
 the top 50 strains and molecules based on their representative pIC50 scores (Reference: 2- pIC5 binning and average.py for 
 more information on binning and averaging of pIC50). Missingno visualizations are particularly valuable for sparse datasets, 
 such as in this case, where missing data patterns can reveal systematic gaps in experimental coverage, guide prioritization of
@@ -12,6 +13,7 @@ Preconditions:
 2) "pairings_center_copy.csv" made in step 2 of the pipeline.
 '''
 
+# Imports
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt

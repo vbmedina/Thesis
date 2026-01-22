@@ -1,4 +1,5 @@
-''' Description: This script is split into 2 parts. It aims to calculate the best measure of center for the pIC50 scores of 
+''' 
+Description: This script is split into 2 parts. It aims to calculate the best measure of center for the pIC50 scores of 
 each molecule-strain pairing. Using the CSV file generated in the previous step, "pairing_IC50_pIC50.csv", it computes the 
 RMSE of the pIC50 scores for each pairing. In this case, RMSE (Root Mean Square Error) quantifies the typical deviation of 
 pIC50 values from their mean and serves as an indicator of data variability and outlier presence. Since the mean is highly 
@@ -12,16 +13,16 @@ Preconditions:
 2) "pairings_center.csv" - gnerated from stage 2 of the pipeline.
 '''
 
-
-
 import numpy as np
 import pandas as pd
 from itertools import combinations
 
 '''---------------------------------------------------------------------------------------------------------------------'''
-''' Part 1: This script is the 1st part of the script, which goes through the "pairing_IC50_pIC50.csv" file and 
+''' 
+Part 1: This script is the 1st part of the script, which goes through the "pairing_IC50_pIC50.csv" file and 
 computes a representative pIC50 for each strain-chemical pair based on the RMSE of their pIC50 scores. If the
-RMSE is less than 1, the mean of the pIC50 scores is used; otherwise, the median is used.'''
+RMSE is less than 1, the mean of the pIC50 scores is used; otherwise, the median is used.
+'''
 
 # File paths
 in_path  = "./p1_preprocessing/2 - pIC50 binning and averaging/pairing_IC50_pIC50.csv"
@@ -74,7 +75,9 @@ df.to_csv(out_path, index=False)
 print(f"Written processed CSV to: {out_path}")
 
 '''---------------------------------------------------------------------------------------------------------------------'''
-''' Part 2: This 2nd part of the script saves the "Representative_pIC50" result to final_data_copy.csv. '''
+''' 
+Part 2: This 2nd part of the script saves the "Representative_pIC50" result to final_data_copy.csv. 
+'''
 
 final_data = './p1_preprocessing/2 - pIC50 binning and averaging/final_data_copy.csv'
 
@@ -82,7 +85,7 @@ iter_fd = pd.read_csv(final_data)
 pairings_df = pd.read_csv(out_path)
 
 def match_pIC50(row):
-    #return the pIC50 value from parings_center.csv if the strain and chemical match
+    #Return the pIC50 value from parings_center.csv if the strain and chemical match
     if int(row.name) % 1000 == 0:
         print(row.name)
     strain = row['standardized_strain']

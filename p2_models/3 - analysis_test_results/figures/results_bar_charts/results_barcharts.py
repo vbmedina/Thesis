@@ -37,7 +37,6 @@ plt.rcParams.update({
     "ytick.labelsize": 10,
 })
 
-# --- Colors ---
 # Requested brand colors
 COLOR_ASEX = "#eca38c"   # asexual
 COLOR_SEX  = "#b12d31"   # sexual

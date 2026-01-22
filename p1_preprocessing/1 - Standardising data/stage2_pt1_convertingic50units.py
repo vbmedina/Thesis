@@ -1,11 +1,12 @@
-''' Description: This script is the second stage to the pipeline (IC50). It works on the IC50 scores.
+''' 
+Description: This script is the second stage to the pipeline (IC50). It works on the IC50 scores.
 This script:
-1) converts the IC50 values to nM
-2) removes rows with an empty, negative, or 0 IC50 value.
+1) Converts the IC50 values to nM
+2) Removes rows with an empty, negative, or "0" IC50 value.
 
 Preconditions:
-1) "postphase1_strainsmerged.csv" - generated from stage1'''
-
+1) "Postphase1_strainsmerged.csv" - generated from stage1
+'''
 
 # Imports
 from pathlib import Path
@@ -30,8 +31,8 @@ after = len(df)
 totalDropped = before - after
 
 # Print statement for deleted rows with empty IC50 values
-print(f"   Empty IC50   : {totalDropped:,}  ({(totalDropped)/before:.2%})")
-print(f"   Rows remaining : {after:,}")
+print(f" Empty IC50 : {totalDropped:,}  ({(totalDropped)/before:.2%})")
+print(f" Rows remaining : {after:,}")
 
 # Canonicalize unit strings
 def canon(u: str) -> str:
@@ -42,17 +43,16 @@ def canon(u: str) -> str:
 
 # Factors to multiply by to turn units to nM
 FACTOR = {
-    "NM":        1,
+    "NM": 1,
     "NANOMOLAR": 1,
-    "UM":        1_000,         
-    "MM":        1_000_000,    
-    "PM":        0.001,
+    "UM": 1_000,         
+    "MM": 1_000_000,    
+    "PM": 0.001,
 }
 
 
-# Regex for strings like "10^-2microM", "10^-5 uM"
+# Regex for strings with special characters
 exp_pat = re.compile(r"10\^?-?(-?\d+)\s*(?:U|MICRO)?M", re.I)
-# Regex for strings like "10'-5 g/L"
 exp_pat_concentration = re.compile(r"(?:10\^?'?-?(-?\d+)\s*)?(U?)(?:G)/(M?)L", re.I)
 
 # Convert
@@ -80,7 +80,7 @@ def convert_row(row):
     m = exp_pat.fullmatch(raw_unit.replace(" ", ""))
     if m:
         exponent = int(m.group(1))  
-        factor   = (10 ** exponent) * 1_000        # µM to nM
+        factor = (10 ** exponent) * 1_000        # µM to nM
         convertible += 1
         return row[val_col] * factor
 
@@ -111,9 +111,9 @@ df[unit_col] = "nM"
 # SAVE
 df.to_csv(out, index=False)
 print(f"\n  Wrote {out}")
-print(f"   Converted rows : {convertible:,}")
-print(f"   Dropped rows   : {dropped:,}  ({dropped/before:.2%})")
-print(f"   Rows remaining : {before:,}")
+print(f" Converted rows : {convertible:,}")
+print(f" Dropped rows : {dropped:,}  ({dropped/before:.2%})")
+print(f" Rows remaining : {before:,}")
 
 # Print unknown units
 if unknown_units:

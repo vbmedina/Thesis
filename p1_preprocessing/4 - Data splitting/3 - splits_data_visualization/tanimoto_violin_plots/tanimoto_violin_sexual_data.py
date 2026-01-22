@@ -1,4 +1,5 @@
-''' Description: This script generates violin and box plots to visualize the distribution of maximum Tanimoto similarities
+''' 
+Description: This script generates violin and box plots to visualize the distribution of maximum Tanimoto similarities
 between test molecules and their nearest neighbors in the training set across sexual and asexual data.
 
 Preconditions:
@@ -20,10 +21,10 @@ from rdkit.Chem import rdFingerprintGenerator as FPG
 RDLogger.DisableLog("rdApp.warning")
 
 # Base directories for split/fold analysis between sexual and asexual data
-PROJECT   = Path("./p1_preprocessing/4 - Data splitting")
+PROJECT = Path("./p1_preprocessing/4 - Data splitting")
 DATA_ROOT = PROJECT
 BASE_DIRS = [DATA_ROOT / "2 - split_data"]
-SPLITS    = ["random", "scaffold", "butina", "umap_kmeans", "umap_ward"]
+SPLITS = ["random", "scaffold", "butina", "umap_kmeans", "umap_ward"]
 
 SEXUALDATA = "./p0_all_csvs/postphase3_Asexual_Only.csv"
 
@@ -35,8 +36,8 @@ DISPLAY_NAME = {
     "umap_ward": "UMAP (ward)",
 }
 
-FOLDS     = [1, 2, 3, 4, 5]
-SMI_COL   = "Smiles"
+FOLDS = [1, 2, 3, 4, 5]
+SMI_COL = "Smiles"
 
 RADIUS = 2
 N_BITS = 2048
@@ -44,8 +45,8 @@ USE_CHIRALITY = False
 EXCLUDE_IDENTICAL = True  # drop exact SMILES matches when computing nearest neighbor
 
 # Output for split/fold figure + stats
-FIG_DIR   = DATA_ROOT / "./3 - splits_data_visualization/tanimoto_violin_plots"
-OUT_PNG   = FIG_DIR / f"max_tanimoto_violins_box_{N_BITS}.png"
+FIG_DIR = DATA_ROOT / "./3 - splits_data_visualization/tanimoto_violin_plots"
+OUT_PNG = FIG_DIR / f"max_tanimoto_violins_box_{N_BITS}.png"
 STATS_CSV = FIG_DIR / f"max_tanimoto_stats_{N_BITS}.csv"
 
 # Explicit output paths you requested:
@@ -70,7 +71,7 @@ except Exception as e:
         m = Chem.MolFromSmiles(smi)
         return AllChem.GetMorganFingerprintAsBitVect(m, int(RADIUS), nBits=int(N_BITS)) if m is not None else None
 
-# ============ Helpers ============
+# Helper
 def canon(s: str) -> str | None:
     m = Chem.MolFromSmiles(str(s))
     return Chem.MolToSmiles(m, canonical=True) if m is not None else None
@@ -88,7 +89,7 @@ def find_csv(base_dirs, split: str, fold: int, which: str) -> Path | None:
                 return hits[0]
     return None
 
-# ============ ORIGINAL: Split/Fold main ============
+# ORIGINAL: Split/Fold main
 def main_splits():
     rows = []
     fp_cache: dict[str, object] = {}
@@ -190,7 +191,7 @@ def main_splits():
     fig.savefig(OUT_PNG, dpi=300)
     print(f"\nSaved figure - {OUT_PNG}")
 
-# ============ NEW: Sexual-only (no folds) ============
+# Sexual-only (no folds) 
 def main_sexual():
     # Load and canonicalize
     df = pd.read_csv(SEXUALDATA)
@@ -305,7 +306,6 @@ def main_sexual():
     fig.savefig(SEX_OUT_PNG, dpi=300)
     print(f"Saved Sexual figure: {SEX_OUT_PNG}")
 
-# ============ Entrypoint ============
 if __name__ == "__main__":
     # 1) Run your original split/fold analysis (unchanged behavior)
     main_splits()

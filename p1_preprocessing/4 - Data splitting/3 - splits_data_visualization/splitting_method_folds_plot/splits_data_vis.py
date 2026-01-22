@@ -12,7 +12,7 @@ import seaborn as sns
 import matplotlib.patches as mpatches
 from matplotlib.colors import ListedColormap
 
-# Parametes
+# Parameters
 TOTAL = 39_624
 FOLDS = 5
 TRAIN_PCT = 0.70
