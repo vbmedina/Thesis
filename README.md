@@ -3,8 +3,9 @@
 This repo contains the scripts used in the bioengineering masters thesis: Deep-learning for the Discovery of Small-Molecule Antimalarial Drug Leads. This repo is dedicated to helping researchers reproduce what has been done in this thesis. Malaria, caused by the parasite Plasmodium falciparum, is considered to be the deadliest form of its species in humans and remains a major global health threat. P. falciparum exhibits multiple distinct life stages, including asexual and sexual gametocyte blood stages. Asexual replication in human blood causes malaria symptoms by multiplying rapidly, while sexual stages (gametocytes) are non-replicating forms that develop for mosquito transmission, enabling the parasite's life cycle to continue in the insect vector and infect new humans. Both present unique drug susceptibility profiles and biochemical chemical pathways driven by its genetically volatile nature. P. faliparum's biggest data repository, CHEMBL, is greatly composed of molecules directed towards the asexual blood stage (97%). 
 The use of deep learning in virtual screenings (VS) has shown promising results in identifying active molecules against P. falciparum. One common pitfall in VS is the inability of traditional splitting methods to identify novel molecules as potential targets. The use of both Directed Message Passing Neural Networks in combination with Uniform Manifold Approximation (UMAP) based clustering methods has been identified as a solution to overcome the problem of both biological and chemical generalizability for novel anti-malarial identification. 
 
-<img width="784" height="580" alt="Screenshot 2026-01-22 at 12 25 26 pm" src="https://github.com/user-attachments/assets/b4b87f27-ea51-4d1f-ab70-81fd93f6eee6" />
-
+<p align="center">
+  <img width="784" height="580" alt="Screenshot 2026-01-22 at 12 25 26 pm" src="https://github.com/user-attachments/assets/b4b87f27-ea51-4d1f-ab70-81fd93f6eee6" />
+</p>
 
 <img width="4200" height="3000" alt="missingno" src="https://github.com/user-attachments/assets/fe43d4ef-16f5-43f7-9872-1aba8f51d12c" />
 
