@@ -7,14 +7,16 @@ The use of deep learning in virtual screenings (VS) has shown promising results 
   <img width="784" height="580" alt="Screenshot 2026-01-22 at 12 25 26 pm" src="https://github.com/user-attachments/assets/b4b87f27-ea51-4d1f-ab70-81fd93f6eee6" />
 </p>
 
+## ChEMBL Dataset
+This study recommends the following pipeline to streamline preprocessing time of the CEHMBL364 dataset found in as a downloadable CSV file on the ChEMBL wesbite. This is particularly important in cases where P. falciparum strains are needed for data analysis as many meta data labels are inaccurate, incomplete, inconsistent, or outdated.
+
 <p align="center">
   <img width="4200" height="3000" alt="missingno" src="https://github.com/user-attachments/assets/fe43d4ef-16f5-43f7-9872-1aba8f51d12c" />
 </p>
 
-## ChEMBL Dataset
-This study recommends the following pipeline to streamline preprocessing time of the CEHMBL364 dataset found in as a downloadable CSV file on the ChEMBL wesbite. This is particularly important in cases where P. falciparum strains are needed for data analysis as many meta data labels are inaccurate, incomplete, inconsistent, or outdated.
-
-<img width="794" height="111" alt="Screenshot 2025-08-31 at 10 24 47 pm" src="https://github.com/user-attachments/assets/6bff7c54-1978-4c48-a033-36d67b006016" />
+<p align="center">
+  <img width="794" height="111" alt="Screenshot 2025-08-31 at 10 24 47 pm" src="https://github.com/user-attachments/assets/6bff7c54-1978-4c48-a033-36d67b006016" />
+</p>
 
 This project used the ChEMBL_35 version and was accessed in February of 2025. Upon using the recommended pre-processing pipeline, as shown above, the final dataset contains a total of 39,624 molecules. Of the 39,624 molecules a total of 18,875 unique molecules and 263 unique strains were found. As a note, many molecules in the dataset have multiple IC50 values and or tested on multiple variants of the P. falciparum strain therefore are non-unique.
 
